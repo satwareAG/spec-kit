@@ -1,1397 +1,182 @@
 Command finished with exit code 0.
 Command output:
-[Per-file diff display: 28 files shown, 6 files hidden due to size]
-
-diff --git a/.github/agents/speckit.analyze.agent.md b/.github/agents/speckit.analyze.agent.md
-new file mode 100644
-index 0000000..98b04b0
---- /dev/null
-+++ b/.github/agents/speckit.analyze.agent.md
-@@ -0,0 +1,184 @@
-+---
-+description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.
-+---
-+
-+## User Input
-+
-+```text
-+$ARGUMENTS
-+```
-+
-+You **MUST** consider the user input before proceeding (if not empty).
-+
-+## Goal
-+
-+Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.
-+
-+## Operating Constraints
-+
-+**STRICTLY READ-ONLY**: Do **not** modify any files. Output a structured analysis report. Offer an optional remediation plan (user must explicitly approve before any follow-up editing commands would be invoked manually).
-+
-+**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit.analyze`.
-+
-+## Execution Steps
-+
-+### 1. Initialize Analysis Context
-+
-+Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` once from repo root and parse JSON for FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
-+
-+- SPEC = FEATURE_DIR/spec.md
-+- PLAN = FEATURE_DIR/plan.md
-+- TASKS = FEATURE_DIR/tasks.md
-+
-+Abort with an error message if any required file is missing (instruct the user to run missing prerequisite command).
-+For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
-+
-+### 2. Load Artifacts (Progressive Disclosure)
-+
-+Load only the minimal necessary context from each artifact:
-+
-+**From spec.md:**
-+
-+- Overview/Context
-+- Functional Requirements
-+- Non-Functional Requirements
-+- User Stories
-+- Edge Cases (if present)
-+
-+**From plan.md:**
-+
-+- Architecture/stack choices
-+- Data Model references
-+- Phases
-+- Technical constraints
-+
-+**From tasks.md:**
-+
-+- Task IDs
-+- Descriptions
-+- Phase grouping
-+- Parallel markers [P]
-+- Referenced file paths
-+
-+**From constitution:**
-+
-+- Load `.specify/memory/constitution.md` for principle validation
-+
-+### 3. Build Semantic Models
-+
-+Create internal representations (do not include raw artifacts in output):
-+
-+- **Requirements inventory**: Each functional + non-functional requirement with a stable key (derive slug based on imperative phrase; e.g., "User can upload file" → `user-can-upload-file`)
-+- **User story/action inventory**: Discrete user actions with acceptance criteria
-+- **Task coverage mapping**: Map each task to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs or key phrases)
-+- **Constitution rule set**: Extract principle names and MUST/SHOULD normative statements
-+
-+### 4. Detection Passes (Token-Efficient Analysis)
-+
-+Focus on high-signal findings. Limit to 50 findings total; aggregate remainder in overflow summary.
-+
-+#### A. Duplication Detection
-+
-+- Identify near-duplicate requirements
-+- Mark lower-quality phrasing for consolidation
-+
-+#### B. Ambiguity Detection
-+
-+- Flag vague adjectives (fast, scalable, secure, intuitive, robust) lacking measurable criteria
-+- Flag unresolved placeholders (TODO, TKTK, ???, `<placeholder>`, etc.)
-+
-+#### C. Underspecification
-+
-+- Requirements with verbs but missing object or measurable outcome
-+- User stories missing acceptance criteria alignment
-+- Tasks referencing files or components not defined in spec/plan
-+
-+#### D. Constitution Alignment
-+
-+- Any requirement or plan element conflicting with a MUST principle
-+- Missing mandated sections or quality gates from constitution
-+
-+#### E. Coverage Gaps
-+
-+- Requirements with zero associated tasks
-+- Tasks with no mapped requirement/story
-+- Non-functional requirements not reflected in tasks (e.g., performance, security)
-+
-+#### F. Inconsistency
-+
-+- Terminology drift (same concept named differently across files)
-+- Data entities referenced in plan but absent in spec (or vice versa)
-+- Task ordering contradictions (e.g., integration tasks before foundational setup tasks without dependency note)
-+- Conflicting requirements (e.g., one requires Next.js while other specifies Vue)
-+
-+### 5. Severity Assignment
-+
-+Use this heuristic to prioritize findings:
-+
-+- **CRITICAL**: Violates constitution MUST, missing core spec artifact, or requirement with zero coverage that blocks baseline functionality
-+- **HIGH**: Duplicate or conflicting requirement, ambiguous security/performance attribute, untestable acceptance criterion
-+- **MEDIUM**: Terminology drift, missing non-functional task coverage, underspecified edge case
-+- **LOW**: Style/wording improvements, minor redundancy not affecting execution order
-+
-+### 6. Produce Compact Analysis Report
-+
-+Output a Markdown report (no file writes) with the following structure:
-+
-+## Specification Analysis Report
-+
-+| ID | Category | Severity | Location(s) | Summary | Recommendation |
-+|----|----------|----------|-------------|---------|----------------|
-+| A1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
-+
-+(Add one row per finding; generate stable IDs prefixed by category initial.)
-+
-+**Coverage Summary Table:**
-+
-+| Requirement Key | Has Task? | Task IDs | Notes |
-+|-----------------|-----------|----------|-------|
-+
-+**Constitution Alignment Issues:** (if any)
-+
-+**Unmapped Tasks:** (if any)
-+
-+**Metrics:**
-+
-+- Total Requirements
-+- Total Tasks
-+- Coverage % (requirements with >=1 task)
-+- Ambiguity Count
-+- Duplication Count
-+- Critical Issues Count
-+
-+### 7. Provide Next Actions
-+
-+At end of report, output a concise Next Actions block:
-+
-+- If CRITICAL issues exist: Recommend resolving before `/speckit.implement`
-+- If only LOW/MEDIUM: User may proceed, but provide improvement suggestions
-+- Provide explicit command suggestions: e.g., "Run /speckit.specify with refinement", "Run /speckit.plan to adjust architecture", "Manually edit tasks.md to add coverage for 'performance-metrics'"
-+
-+### 8. Offer Remediation
-+
-+Ask the user: "Would you like me to suggest concrete remediation edits for the top N issues?" (Do NOT apply them automatically.)
-+
-+## Operating Principles
-+
-+### Context Efficiency
-+
-+- **Minimal high-signal tokens**: Focus on actionable findings, not exhaustive documentation
-+- **Progressive disclosure**: Load artifacts incrementally; don't dump all content into analysis
-+- **Token-efficient output**: Limit findings table to 50 rows; summarize overflow
-+- **Deterministic results**: Rerunning without changes should produce consistent IDs and counts
-+
-+### Analysis Guidelines
-+
-+- **NEVER modify files** (this is read-only analysis)
-+- **NEVER hallucinate missing sections** (if absent, report them accurately)
-+- **Prioritize constitution violations** (these are always CRITICAL)
-+- **Use examples over exhaustive rules** (cite specific instances, not generic patterns)
-+- **Report zero issues gracefully** (emit success report with coverage statistics)
-+
-+## Context
-+
-+$ARGUMENTS
-
-### .github/agents/speckit.checklist.agent.md
-[Large diff hidden: 301 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .github/agents/speckit.checklist.agent.md
-```
-
-diff --git a/.github/agents/speckit.clarify.agent.md b/.github/agents/speckit.clarify.agent.md
-new file mode 100644
-index 0000000..657439f
---- /dev/null
-+++ b/.github/agents/speckit.clarify.agent.md
-@@ -0,0 +1,181 @@
-+---
-+description: Identify underspecified areas in the current feature spec by asking up to 5 highly targeted clarification questions and encoding answers back into the spec.
-+handoffs: 
-+  - label: Build Technical Plan
-+    agent: speckit.plan
-+    prompt: Create a plan for the spec. I am building with...
-+---
-+
-+## User Input
-+
-+```text
-+$ARGUMENTS
-+```
-+
-+You **MUST** consider the user input before proceeding (if not empty).
-+
-+## Outline
-+
-+Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.
-+
-+Note: This clarification workflow is expected to run (and be completed) BEFORE invoking `/speckit.plan`. If the user explicitly states they are skipping clarification (e.g., exploratory spike), you may proceed, but must warn that downstream rework risk increases.
-+
-+Execution steps:
-+
-+1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:
-+   - `FEATURE_DIR`
-+   - `FEATURE_SPEC`
-+   - (Optionally capture `IMPL_PLAN`, `TASKS` for future chained flows.)
-+   - If JSON parsing fails, abort and instruct user to re-run `/speckit.specify` or verify feature branch environment.
-+   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
-+
-+2. Load the current spec file. Perform a structured ambiguity & coverage scan using this taxonomy. For each category, mark status: Clear / Partial / Missing. Produce an internal coverage map used for prioritization (do not output raw map unless no questions will be asked).
-+
-+   Functional Scope & Behavior:
-+   - Core user goals & success criteria
-+   - Explicit out-of-scope declarations
-+   - User roles / personas differentiation
-+
-+   Domain & Data Model:
-+   - Entities, attributes, relationships
-+   - Identity & uniqueness rules
-+   - Lifecycle/state transitions
-+   - Data volume / scale assumptions
-+
-+   Interaction & UX Flow:
-+   - Critical user journeys / sequences
-+   - Error/empty/loading states
-+   - Accessibility or localization notes
-+
-+   Non-Functional Quality Attributes:
-+   - Performance (latency, throughput targets)
-+   - Scalability (horizontal/vertical, limits)
-+   - Reliability & availability (uptime, recovery expectations)
-+   - Observability (logging, metrics, tracing signals)
-+   - Security & privacy (authN/Z, data protection, threat assumptions)
-+   - Compliance / regulatory constraints (if any)
-+
-+   Integration & External Dependencies:
-+   - External services/APIs and failure modes
-+   - Data import/export formats
-+   - Protocol/versioning assumptions
-+
-+   Edge Cases & Failure Handling:
-+   - Negative scenarios
-+   - Rate limiting / throttling
-+   - Conflict resolution (e.g., concurrent edits)
-+
-+   Constraints & Tradeoffs:
-+   - Technical constraints (language, storage, hosting)
-+   - Explicit tradeoffs or rejected alternatives
-+
-+   Terminology & Consistency:
-+   - Canonical glossary terms
-+   - Avoided synonyms / deprecated terms
-+
-+   Completion Signals:
-+   - Acceptance criteria testability
-+   - Measurable Definition of Done style indicators
-+
-+   Misc / Placeholders:
-+   - TODO markers / unresolved decisions
-+   - Ambiguous adjectives ("robust", "intuitive") lacking quantification
-+
-+   For each category with Partial or Missing status, add a candidate question opportunity unless:
-+   - Clarification would not materially change implementation or validation strategy
-+   - Information is better deferred to planning phase (note internally)
-+
-+3. Generate (internally) a prioritized queue of candidate clarification questions (maximum 5). Do NOT output them all at once. Apply these constraints:
-+    - Maximum of 5 total questions across the whole session.
-+    - Each question must be answerable with EITHER:
-+       - A short multiple‑choice selection (2–5 distinct, mutually exclusive options), OR
-+       - A one-word / short‑phrase answer (explicitly constrain: "Answer in <=5 words").
-+    - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
-+    - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
-+    - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
-+    - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
-+    - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
-+
-+4. Sequential questioning loop (interactive):
-+    - Present EXACTLY ONE question at a time.
-+    - For multiple‑choice questions:
-+       - **Analyze all options** and determine the **most suitable option** based on:
-+          - Best practices for the project type
-+          - Common patterns in similar implementations
-+          - Risk reduction (security, performance, maintainability)
-+          - Alignment with any explicit project goals or constraints visible in the spec
-+       - Present your **recommended option prominently** at the top with clear reasoning (1-2 sentences explaining why this is the best choice).
-+       - Format as: `**Recommended:** Option [X] - <reasoning>`
-+       - Then render all options as a Markdown table:
-+
-+       | Option | Description |
-+       |--------|-------------|
-+       | A | <Option A description> |
-+       | B | <Option B description> |
-+       | C | <Option C description> (add D/E as needed up to 5) |
-+       | Short | Provide a different short answer (<=5 words) (Include only if free-form alternative is appropriate) |
-+
-+       - After the table, add: `You can reply with the option letter (e.g., "A"), accept the recommendation by saying "yes" or "recommended", or provide your own short answer.`
-+    - For short‑answer style (no meaningful discrete options):
-+       - Provide your **suggested answer** based on best practices and context.
-+       - Format as: `**Suggested:** <your proposed answer> - <brief reasoning>`
-+       - Then output: `Format: Short answer (<=5 words). You can accept the suggestion by saying "yes" or "suggested", or provide your own answer.`
-+    - After the user answers:
-+       - If the user replies with "yes", "recommended", or "suggested", use your previously stated recommendation/suggestion as the answer.
-+       - Otherwise, validate the answer maps to one option or fits the <=5 word constraint.
-+       - If ambiguous, ask for a quick disambiguation (count still belongs to same question; do not advance).
-+       - Once satisfactory, record it in working memory (do not yet write to disk) and move to the next queued question.
-+    - Stop asking further questions when:
-+       - All critical ambiguities resolved early (remaining queued items become unnecessary), OR
-+       - User signals completion ("done", "good", "no more"), OR
-+       - You reach 5 asked questions.
-+    - Never reveal future queued questions in advance.
-+    - If no valid questions exist at start, immediately report no critical ambiguities.
-+
-+5. Integration after EACH accepted answer (incremental update approach):
-+    - Maintain in-memory representation of the spec (loaded once at start) plus the raw file contents.
-+    - For the first integrated answer in this session:
-+       - Ensure a `## Clarifications` section exists (create it just after the highest-level contextual/overview section per the spec template if missing).
-+       - Under it, create (if not present) a `### Session YYYY-MM-DD` subheading for today.
-+    - Append a bullet line immediately after acceptance: `- Q: <question> → A: <final answer>`.
-+    - Then immediately apply the clarification to the most appropriate section(s):
-+       - Functional ambiguity → Update or add a bullet in Functional Requirements.
-+       - User interaction / actor distinction → Update User Stories or Actors subsection (if present) with clarified role, constraint, or scenario.
-+       - Data shape / entities → Update Data Model (add fields, types, relationships) preserving ordering; note added constraints succinctly.
-+       - Non-functional constraint → Add/modify measurable criteria in Non-Functional / Quality Attributes section (convert vague adjective to metric or explicit target).
-+       - Edge case / negative flow → Add a new bullet under Edge Cases / Error Handling (or create such subsection if template provides placeholder for it).
-+       - Terminology conflict → Normalize term across spec; retain original only if necessary by adding `(formerly referred to as "X")` once.
-+    - If the clarification invalidates an earlier ambiguous statement, replace that statement instead of duplicating; leave no obsolete contradictory text.
-+    - Save the spec file AFTER each integration to minimize risk of context loss (atomic overwrite).
-+    - Preserve formatting: do not reorder unrelated sections; keep heading hierarchy intact.
-+    - Keep each inserted clarification minimal and testable (avoid narrative drift).
-+
-+6. Validation (performed after EACH write plus final pass):
-+   - Clarifications session contains exactly one bullet per accepted answer (no duplicates).
-+   - Total asked (accepted) questions ≤ 5.
-+   - Updated sections contain no lingering vague placeholders the new answer was meant to resolve.
-+   - No contradictory earlier statement remains (scan for now-invalid alternative choices removed).
-+   - Markdown structure valid; only allowed new headings: `## Clarifications`, `### Session YYYY-MM-DD`.
-+   - Terminology consistency: same canonical term used across all updated sections.
-+
-+7. Write the updated spec back to `FEATURE_SPEC`.
-+
-+8. Report completion (after questioning loop ends or early termination):
-+   - Number of questions asked & answered.
-+   - Path to updated spec.
-+   - Sections touched (list names).
-+   - Coverage summary table listing each taxonomy category with Status: Resolved (was Partial/Missing and addressed), Deferred (exceeds question quota or better suited for planning), Clear (already sufficient), Outstanding (still Partial/Missing but low impact).
-+   - If any Outstanding or Deferred remain, recommend whether to proceed to `/speckit.plan` or run `/speckit.clarify` again later post-plan.
-+   - Suggested next command.
-+
-+Behavior rules:
-+
-+- If no meaningful ambiguities found (or all potential questions would be low-impact), respond: "No critical ambiguities detected worth formal clarification." and suggest proceeding.
-+- If spec file missing, instruct user to run `/speckit.specify` first (do not create a new spec here).
-+- Never exceed 5 total asked questions (clarification retries for a single question do not count as new questions).
-+- Avoid speculative tech stack questions unless the absence blocks functional clarity.
-+- Respect user early termination signals ("stop", "done", "proceed").
-+- If no questions asked due to full coverage, output a compact coverage summary (all categories Clear) then suggest advancing.
-+- If quota reached with unresolved high-impact categories remaining, explicitly flag them under Deferred with rationale.
-+
-+Context for prioritization: $ARGUMENTS
-
-diff --git a/.github/agents/speckit.constitution.agent.md b/.github/agents/speckit.constitution.agent.md
-new file mode 100644
-index 0000000..63d4f66
---- /dev/null
-+++ b/.github/agents/speckit.constitution.agent.md
-@@ -0,0 +1,84 @@
-+---
-+description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
-+handoffs: 
-+  - label: Build Specification
-+    agent: speckit.specify
-+    prompt: Implement the feature specification based on the updated constitution. I want to build...
-+---
-+
-+## User Input
-+
-+```text
-+$ARGUMENTS
-+```
-+
-+You **MUST** consider the user input before proceeding (if not empty).
-+
-+## Outline
-+
-+You are updating the project constitution at `.specify/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
-+
-+**Note**: If `.specify/memory/constitution.md` does not exist yet, it should have been initialized from `.specify/templates/constitution-template.md` during project setup. If it's missing, copy the template first.
-+
-+Follow this execution flow:
-+
-+1. Load the existing constitution at `.specify/memory/constitution.md`.
-+   - Identify every placeholder token of the form `[ALL_CAPS_IDENTIFIER]`.
-+   **IMPORTANT**: The user might require less or more principles than the ones used in the template. If a number is specified, respect that - follow the general template. You will update the doc accordingly.
-+
-+2. Collect/derive values for placeholders:
-+   - If user input (conversation) supplies a value, use it.
-+   - Otherwise infer from existing repo context (README, docs, prior constitution versions if embedded).
-+   - For governance dates: `RATIFICATION_DATE` is the original adoption date (if unknown ask or mark TODO), `LAST_AMENDED_DATE` is today if changes are made, otherwise keep previous.
-+   - `CONSTITUTION_VERSION` must increment according to semantic versioning rules:
-+     - MAJOR: Backward incompatible governance/principle removals or redefinitions.
-+     - MINOR: New principle/section added or materially expanded guidance.
-+     - PATCH: Clarifications, wording, typo fixes, non-semantic refinements.
-+   - If version bump type ambiguous, propose reasoning before finalizing.
-+
-+3. Draft the updated constitution content:
-+   - Replace every placeholder with concrete text (no bracketed tokens left except intentionally retained template slots that the project has chosen not to define yet—explicitly justify any left).
-+   - Preserve heading hierarchy and comments can be removed once replaced unless they still add clarifying guidance.
-+   - Ensure each Principle section: succinct name line, paragraph (or bullet list) capturing non‑negotiable rules, explicit rationale if not obvious.
-+   - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
-+
-+4. Consistency propagation checklist (convert prior checklist into active validations):
-+   - Read `.specify/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
-+   - Read `.specify/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
-+   - Read `.specify/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-+   - Read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
-+   - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
-+
-+5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
-+   - Version change: old → new
-+   - List of modified principles (old title → new title if renamed)
-+   - Added sections
-+   - Removed sections
-+   - Templates requiring updates (✅ updated / ⚠ pending) with file paths
-+   - Follow-up TODOs if any placeholders intentionally deferred.
-+
-+6. Validation before final output:
-+   - No remaining unexplained bracket tokens.
-+   - Version line matches report.
-+   - Dates ISO format YYYY-MM-DD.
-+   - Principles are declarative, testable, and free of vague language ("should" → replace with MUST/SHOULD rationale where appropriate).
-+
-+7. Write the completed constitution back to `.specify/memory/constitution.md` (overwrite).
-+
-+8. Output a final summary to the user with:
-+   - New version and bump rationale.
-+   - Any files flagged for manual follow-up.
-+   - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
-+
-+Formatting & Style Requirements:
-+
-+- Use Markdown headings exactly as in the template (do not demote/promote levels).
-+- Wrap long rationale lines to keep readability (<100 chars ideally) but do not hard enforce with awkward breaks.
-+- Keep a single blank line between sections.
-+- Avoid trailing whitespace.
-+
-+If the user supplies partial updates (e.g., only one principle revision), still perform validation and version decision steps.
-+
-+If critical info missing (e.g., ratification date truly unknown), insert `TODO(<FIELD_NAME>): explanation` and include in the Sync Impact Report under deferred items.
-+
-+Do not create a new template; always operate on the existing `.specify/memory/constitution.md` file.
-
-### .github/agents/speckit.implement.agent.md
-[Large diff hidden: 204 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .github/agents/speckit.implement.agent.md
-```
-
-diff --git a/.github/agents/speckit.plan.agent.md b/.github/agents/speckit.plan.agent.md
-new file mode 100644
-index 0000000..0ffb929
---- /dev/null
-+++ b/.github/agents/speckit.plan.agent.md
-@@ -0,0 +1,90 @@
-+---
-+description: Execute the implementation planning workflow using the plan template to generate design artifacts.
-+handoffs: 
-+  - label: Create Tasks
-+    agent: speckit.tasks
-+    prompt: Break the plan into tasks
-+    send: true
-+  - label: Create Checklist
-+    agent: speckit.checklist
-+    prompt: Create a checklist for the following domain...
-+---
-+
-+## User Input
-+
-+```text
-+$ARGUMENTS
-+```
-+
-+You **MUST** consider the user input before proceeding (if not empty).
-+
-+## Outline
-+
-+1. **Setup**: Run `.specify/scripts/bash/setup-plan.sh --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
-+
-+2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied).
-+
-+3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
-+   - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
-+   - Fill Constitution Check section from constitution
-+   - Evaluate gates (ERROR if violations unjustified)
-+   - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
-+   - Phase 1: Generate data-model.md, contracts/, quickstart.md
-+   - Phase 1: Update agent context by running the agent script
-+   - Re-evaluate Constitution Check post-design
-+
-+4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
-+
-+## Phases
-+
-+### Phase 0: Outline & Research
-+
-+1. **Extract unknowns from Technical Context** above:
-+   - For each NEEDS CLARIFICATION → research task
-+   - For each dependency → best practices task
-+   - For each integration → patterns task
-+
-+2. **Generate and dispatch research agents**:
-+
-+   ```text
-+   For each unknown in Technical Context:
-+     Task: "Research {unknown} for {feature context}"
-+   For each technology choice:
-+     Task: "Find best practices for {tech} in {domain}"
-+   ```
-+
-+3. **Consolidate findings** in `research.md` using format:
-+   - Decision: [what was chosen]
-+   - Rationale: [why chosen]
-+   - Alternatives considered: [what else evaluated]
-+
-+**Output**: research.md with all NEEDS CLARIFICATION resolved
-+
-+### Phase 1: Design & Contracts
-+
-+**Prerequisites:** `research.md` complete
-+
-+1. **Extract entities from feature spec** → `data-model.md`:
-+   - Entity name, fields, relationships
-+   - Validation rules from requirements
-+   - State transitions if applicable
-+
-+2. **Define interface contracts** (if project has external interfaces) → `/contracts/`:
-+   - Identify what interfaces the project exposes to users or other systems
-+   - Document the contract format appropriate for the project type
-+   - Examples: public APIs for libraries, command schemas for CLI tools, endpoints for web services, grammars for parsers, UI contracts for applications
-+   - Skip if project is purely internal (build scripts, one-off tools, etc.)
-+
-+3. **Agent context update**:
-+   - Run `.specify/scripts/bash/update-agent-context.sh copilot`
-+   - These scripts detect which AI agent is in use
-+   - Update the appropriate agent-specific context file
-+   - Add only new technology from current plan
-+   - Preserve manual additions between markers
-+
-+**Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
-+
-+## Key rules
-+
-+- Use absolute paths
-+- ERROR on gate failures or unresolved clarifications
-
-### .github/agents/speckit.specify.agent.md
-[Large diff hidden: 245 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .github/agents/speckit.specify.agent.md
-```
-
-### .github/agents/speckit.tasks.agent.md
-[Large diff hidden: 206 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .github/agents/speckit.tasks.agent.md
-```
-
-diff --git a/.github/agents/speckit.taskstoissues.agent.md b/.github/agents/speckit.taskstoissues.agent.md
-new file mode 100644
-index 0000000..0799191
---- /dev/null
-+++ b/.github/agents/speckit.taskstoissues.agent.md
-@@ -0,0 +1,30 @@
-+---
-+description: Convert existing tasks into actionable, dependency-ordered GitHub issues for the feature based on available design artifacts.
-+tools: ['github/github-mcp-server/issue_write']
-+---
-+
-+## User Input
-+
-+```text
-+$ARGUMENTS
-+```
-+
-+You **MUST** consider the user input before proceeding (if not empty).
-+
-+## Outline
-+
-+1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
-+1. From the executed script, extract the path to **tasks**.
-+1. Get the Git remote by running:
-+
-+```bash
-+git config --get remote.origin.url
-+```
-+
-+> [!CAUTION]
-+> ONLY PROCEED TO NEXT STEPS IF THE REMOTE IS A GITHUB URL
-+
-+1. For each task in the list, use the GitHub MCP server to create a new issue in the repository that is representative of the Git remote.
-+
-+> [!CAUTION]
-+> UNDER NO CIRCUMSTANCES EVER CREATE ISSUES IN REPOSITORIES THAT DO NOT MATCH THE REMOTE URL
-
-diff --git a/.github/prompts/speckit.analyze.prompt.md b/.github/prompts/speckit.analyze.prompt.md
-new file mode 100644
-index 0000000..a831411
---- /dev/null
-+++ b/.github/prompts/speckit.analyze.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.analyze
-+---
-
-diff --git a/.github/prompts/speckit.checklist.prompt.md b/.github/prompts/speckit.checklist.prompt.md
-new file mode 100644
-index 0000000..e552492
---- /dev/null
-+++ b/.github/prompts/speckit.checklist.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.checklist
-+---
-
-diff --git a/.github/prompts/speckit.clarify.prompt.md b/.github/prompts/speckit.clarify.prompt.md
-new file mode 100644
-index 0000000..84c12e0
---- /dev/null
-+++ b/.github/prompts/speckit.clarify.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.clarify
-+---
-
-diff --git a/.github/prompts/speckit.constitution.prompt.md b/.github/prompts/speckit.constitution.prompt.md
-new file mode 100644
-index 0000000..b05c5ee
---- /dev/null
-+++ b/.github/prompts/speckit.constitution.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.constitution
-+---
-
-diff --git a/.github/prompts/speckit.implement.prompt.md b/.github/prompts/speckit.implement.prompt.md
-new file mode 100644
-index 0000000..4fb62ec
---- /dev/null
-+++ b/.github/prompts/speckit.implement.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.implement
-+---
-
-diff --git a/.github/prompts/speckit.plan.prompt.md b/.github/prompts/speckit.plan.prompt.md
-new file mode 100644
-index 0000000..cf52554
---- /dev/null
-+++ b/.github/prompts/speckit.plan.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.plan
-+---
-
-diff --git a/.github/prompts/speckit.specify.prompt.md b/.github/prompts/speckit.specify.prompt.md
-new file mode 100644
-index 0000000..b731edc
---- /dev/null
-+++ b/.github/prompts/speckit.specify.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.specify
-+---
-
-diff --git a/.github/prompts/speckit.tasks.prompt.md b/.github/prompts/speckit.tasks.prompt.md
-new file mode 100644
-index 0000000..93e1f8d
---- /dev/null
-+++ b/.github/prompts/speckit.tasks.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.tasks
-+---
-
-diff --git a/.github/prompts/speckit.taskstoissues.prompt.md b/.github/prompts/speckit.taskstoissues.prompt.md
-new file mode 100644
-index 0000000..aa80987
---- /dev/null
-+++ b/.github/prompts/speckit.taskstoissues.prompt.md
-@@ -0,0 +1,3 @@
-+---
-+agent: speckit.taskstoissues
-+---
-
-diff --git a/.github/workflows/scripts/create-github-release.sh b/.github/workflows/scripts/create-github-release.sh
-index 864e001..62690c6 100755
---- a/.github/workflows/scripts/create-github-release.sh
-+++ b/.github/workflows/scripts/create-github-release.sh
-@@ -54,6 +54,8 @@ gh release create "$VERSION" \
-   .genreleases/spec-kit-template-agy-ps-"$VERSION".zip \
-   .genreleases/spec-kit-template-bob-sh-"$VERSION".zip \
-   .genreleases/spec-kit-template-bob-ps-"$VERSION".zip \
-+  .genreleases/spec-kit-template-junie-sh-"$VERSION".zip \
-+  .genreleases/spec-kit-template-junie-ps-"$VERSION".zip \
-   .genreleases/spec-kit-template-vibe-sh-"$VERSION".zip \
-   .genreleases/spec-kit-template-vibe-ps-"$VERSION".zip \
-   .genreleases/spec-kit-template-kimi-sh-"$VERSION".zip \
-
-diff --git a/.github/workflows/scripts/create-release-packages.sh b/.github/workflows/scripts/create-release-packages.sh
-index 8be5a05..cd4ffbe 100755
---- a/.github/workflows/scripts/create-release-packages.sh
-+++ b/.github/workflows/scripts/create-release-packages.sh
-@@ -285,6 +285,9 @@ build_variant() {
-     bob)
-       mkdir -p "$base_dir/.bob/commands"
-       generate_commands bob md "\$ARGUMENTS" "$base_dir/.bob/commands" "$script" ;;
-+    junie)
-+      mkdir -p "$base_dir/.junie/commands"
-+      generate_commands junie md "\$ARGUMENTS" "$base_dir/.junie/commands" "$script" ;;
-     vibe)
-       mkdir -p "$base_dir/.vibe/prompts"
-       generate_commands vibe md "\$ARGUMENTS" "$base_dir/.vibe/prompts" "$script" ;;
-@@ -300,7 +303,7 @@ build_variant() {
- }
- 
- # Determine agent list
--ALL_AGENTS=(claude gemini copilot cursor-agent qwen opencode windsurf codex kilocode auggie roo codebuddy amp shai tabnine kiro-cli agy bob vibe qodercli kimi generic)
-+ALL_AGENTS=(claude gemini copilot cursor-agent qwen opencode windsurf codex kilocode auggie roo codebuddy amp shai tabnine kiro-cli q agy bob vibe qodercli kimi junie generic)
- ALL_SCRIPTS=(sh ps)
- 
- norm_list() {
-
-diff --git a/.junie/memory/errors.md b/.junie/memory/errors.md
-new file mode 100644
-index 0000000..e69de29
-
-diff --git a/.junie/memory/feedback.md b/.junie/memory/feedback.md
-new file mode 100644
-index 0000000..e69de29
-
-diff --git a/.junie/memory/language.json b/.junie/memory/language.json
-new file mode 100644
-index 0000000..641da2b
---- /dev/null
-+++ b/.junie/memory/language.json
-@@ -0,0 +1 @@
-+[{"lang":"en","usageCount":8}]
-\ No newline at end of file
-
-diff --git a/.junie/memory/memory.version b/.junie/memory/memory.version
-new file mode 100644
-index 0000000..9f8e9b6
---- /dev/null
-+++ b/.junie/memory/memory.version
-@@ -0,0 +1 @@
-+1.0
-\ No newline at end of file
-
-diff --git a/.junie/memory/tasks.md b/.junie/memory/tasks.md
-new file mode 100644
-index 0000000..e69de29
-
-diff --git a/.specify/memory/constitution.md b/.specify/memory/constitution.md
-new file mode 100644
-index 0000000..f8ba443
---- /dev/null
-+++ b/.specify/memory/constitution.md
-@@ -0,0 +1,43 @@
-+<!--
-+Sync Impact Report:
-+Version change: [INITIAL] -> 1.0.0
-+List of modified principles:
-+- I. Library-First (added)
-+- II. CLI Interface (added)
-+- III. Test-First (added)
-+- IV. Simplicity (added)
-+- V. Anti-Abstraction (added)
-+Added sections: Core Principles, Technical Context, Governance
-+Templates requiring updates:
-+- .specify/templates/plan-template.md (✅ updated)
-+- .specify/templates/spec-template.md (✅ updated)
-+- .specify/templates/tasks-template.md (✅ updated)
-+Follow-up TODOs: None
-+-->
-+
-+# Spec-Kit Constitution
-+
-+## Core Principles
-+
-+### I. Library-First
-+Every feature starts as a standalone library. Libraries must be self-contained, independently testable, and documented. There should be a clear purpose for every library - no organizational-only libraries.
-+
-+### II. CLI Interface
-+Every library exposes functionality via a CLI. We use a text in/out protocol: stdin/args → stdout, and errors → stderr. We support both JSON and human-readable formats to ensure both machine and human interoperability.
-+
-+### III. Test-First (NON-NEGOTIABLE)
-+TDD is mandatory. Tests must be written and verified to fail before implementation begins. The Red-Green-Refactor cycle is strictly enforced. No code should be merged without accompanying tests that cover the new functionality.
-+
-+### IV. Simplicity
-+We value simplicity over complexity. Maximize the amount of work not done. We avoid future-proofing and over-engineering. If a feature is not needed now, it is not implemented.
-+
-+### V. Anti-Abstraction
-+Use frameworks and libraries directly rather than creating custom wrappers. We prefer a single model representation and avoid unnecessary layers of abstraction that increase cognitive load without adding clear value.
-+
-+## Technical Context
-+The project is built using Python, focusing on providing a toolkit for Spec-Driven Development. It includes the `specify` CLI and various templates for SDD.
-+
-+## Governance
-+This constitution supersedes all other practices within the Spec-Kit project. Amendments to this constitution require documentation, approval, and a migration plan if existing features are affected. All pull requests and code reviews must verify compliance with these principles.
-+
-+**Version**: 1.0.0 | **Ratified**: 2026-03-12 | **Last Amended**: 2026-03-12
-
-diff --git a/.specify/scripts/bash/check-prerequisites.sh b/.specify/scripts/bash/check-prerequisites.sh
-new file mode 100755
-index 0000000..98e387c
---- /dev/null
-+++ b/.specify/scripts/bash/check-prerequisites.sh
-@@ -0,0 +1,166 @@
-+#!/usr/bin/env bash
-+
-+# Consolidated prerequisite checking script
-+#
-+# This script provides unified prerequisite checking for Spec-Driven Development workflow.
-+# It replaces the functionality previously spread across multiple scripts.
-+#
-+# Usage: ./check-prerequisites.sh [OPTIONS]
-+#
-+# OPTIONS:
-+#   --json              Output in JSON format
-+#   --require-tasks     Require tasks.md to exist (for implementation phase)
-+#   --include-tasks     Include tasks.md in AVAILABLE_DOCS list
-+#   --paths-only        Only output path variables (no validation)
-+#   --help, -h          Show help message
-+#
-+# OUTPUTS:
-+#   JSON mode: {"FEATURE_DIR":"...", "AVAILABLE_DOCS":["..."]}
-+#   Text mode: FEATURE_DIR:... \n AVAILABLE_DOCS: \n ✓/✗ file.md
-+#   Paths only: REPO_ROOT: ... \n BRANCH: ... \n FEATURE_DIR: ... etc.
-+
-+set -e
-+
-+# Parse command line arguments
-+JSON_MODE=false
-+REQUIRE_TASKS=false
-+INCLUDE_TASKS=false
-+PATHS_ONLY=false
-+
-+for arg in "$@"; do
-+    case "$arg" in
-+        --json)
-+            JSON_MODE=true
-+            ;;
-+        --require-tasks)
-+            REQUIRE_TASKS=true
-+            ;;
-+        --include-tasks)
-+            INCLUDE_TASKS=true
-+            ;;
-+        --paths-only)
-+            PATHS_ONLY=true
-+            ;;
-+        --help|-h)
-+            cat << 'EOF'
-+Usage: check-prerequisites.sh [OPTIONS]
-+
-+Consolidated prerequisite checking for Spec-Driven Development workflow.
-+
-+OPTIONS:
-+  --json              Output in JSON format
-+  --require-tasks     Require tasks.md to exist (for implementation phase)
-+  --include-tasks     Include tasks.md in AVAILABLE_DOCS list
-+  --paths-only        Only output path variables (no prerequisite validation)
-+  --help, -h          Show this help message
-+
-+EXAMPLES:
-+  # Check task prerequisites (plan.md required)
-+  ./check-prerequisites.sh --json
-+  
-+  # Check implementation prerequisites (plan.md + tasks.md required)
-+  ./check-prerequisites.sh --json --require-tasks --include-tasks
-+  
-+  # Get feature paths only (no validation)
-+  ./check-prerequisites.sh --paths-only
-+  
-+EOF
-+            exit 0
-+            ;;
-+        *)
-+            echo "ERROR: Unknown option '$arg'. Use --help for usage information." >&2
-+            exit 1
-+            ;;
-+    esac
-+done
-+
-+# Source common functions
-+SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-+source "$SCRIPT_DIR/common.sh"
-+
-+# Get feature paths and validate branch
-+eval $(get_feature_paths)
-+check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
-+
-+# If paths-only mode, output paths and exit (support JSON + paths-only combined)
-+if $PATHS_ONLY; then
-+    if $JSON_MODE; then
-+        # Minimal JSON paths payload (no validation performed)
-+        printf '{"REPO_ROOT":"%s","BRANCH":"%s","FEATURE_DIR":"%s","FEATURE_SPEC":"%s","IMPL_PLAN":"%s","TASKS":"%s"}\n' \
-+            "$REPO_ROOT" "$CURRENT_BRANCH" "$FEATURE_DIR" "$FEATURE_SPEC" "$IMPL_PLAN" "$TASKS"
-+    else
-+        echo "REPO_ROOT: $REPO_ROOT"
-+        echo "BRANCH: $CURRENT_BRANCH"
-+        echo "FEATURE_DIR: $FEATURE_DIR"
-+        echo "FEATURE_SPEC: $FEATURE_SPEC"
-+        echo "IMPL_PLAN: $IMPL_PLAN"
-+        echo "TASKS: $TASKS"
-+    fi
-+    exit 0
-+fi
-+
-+# Validate required directories and files
-+if [[ ! -d "$FEATURE_DIR" ]]; then
-+    echo "ERROR: Feature directory not found: $FEATURE_DIR" >&2
-+    echo "Run /speckit.specify first to create the feature structure." >&2
-+    exit 1
-+fi
-+
-+if [[ ! -f "$IMPL_PLAN" ]]; then
-+    echo "ERROR: plan.md not found in $FEATURE_DIR" >&2
-+    echo "Run /speckit.plan first to create the implementation plan." >&2
-+    exit 1
-+fi
-+
-+# Check for tasks.md if required
-+if $REQUIRE_TASKS && [[ ! -f "$TASKS" ]]; then
-+    echo "ERROR: tasks.md not found in $FEATURE_DIR" >&2
-+    echo "Run /speckit.tasks first to create the task list." >&2
-+    exit 1
-+fi
-+
-+# Build list of available documents
-+docs=()
-+
-+# Always check these optional docs
-+[[ -f "$RESEARCH" ]] && docs+=("research.md")
-+[[ -f "$DATA_MODEL" ]] && docs+=("data-model.md")
-+
-+# Check contracts directory (only if it exists and has files)
-+if [[ -d "$CONTRACTS_DIR" ]] && [[ -n "$(ls -A "$CONTRACTS_DIR" 2>/dev/null)" ]]; then
-+    docs+=("contracts/")
-+fi
-+
-+[[ -f "$QUICKSTART" ]] && docs+=("quickstart.md")
-+
-+# Include tasks.md if requested and it exists
-+if $INCLUDE_TASKS && [[ -f "$TASKS" ]]; then
-+    docs+=("tasks.md")
-+fi
-+
-+# Output results
-+if $JSON_MODE; then
-+    # Build JSON array of documents
-+    if [[ ${#docs[@]} -eq 0 ]]; then
-+        json_docs="[]"
-+    else
-+        json_docs=$(printf '"%s",' "${docs[@]}")
-+        json_docs="[${json_docs%,}]"
-+    fi
-+    
-+    printf '{"FEATURE_DIR":"%s","AVAILABLE_DOCS":%s}\n' "$FEATURE_DIR" "$json_docs"
-+else
-+    # Text output
-+    echo "FEATURE_DIR:$FEATURE_DIR"
-+    echo "AVAILABLE_DOCS:"
-+    
-+    # Show status of each potential document
-+    check_file "$RESEARCH" "research.md"
-+    check_file "$DATA_MODEL" "data-model.md"
-+    check_dir "$CONTRACTS_DIR" "contracts/"
-+    check_file "$QUICKSTART" "quickstart.md"
-+    
-+    if $INCLUDE_TASKS; then
-+        check_file "$TASKS" "tasks.md"
-+    fi
-+fi
-
-diff --git a/.specify/scripts/bash/common.sh b/.specify/scripts/bash/common.sh
-new file mode 100755
-index 0000000..2c3165e
---- /dev/null
-+++ b/.specify/scripts/bash/common.sh
-@@ -0,0 +1,156 @@
-+#!/usr/bin/env bash
-+# Common functions and variables for all scripts
-+
-+# Get repository root, with fallback for non-git repositories
-+get_repo_root() {
-+    if git rev-parse --show-toplevel >/dev/null 2>&1; then
-+        git rev-parse --show-toplevel
-+    else
-+        # Fall back to script location for non-git repos
-+        local script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-+        (cd "$script_dir/../../.." && pwd)
-+    fi
-+}
-+
-+# Get current branch, with fallback for non-git repositories
-+get_current_branch() {
-+    # First check if SPECIFY_FEATURE environment variable is set
-+    if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
-+        echo "$SPECIFY_FEATURE"
-+        return
-+    fi
-+
-+    # Then check git if available
-+    if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
-+        git rev-parse --abbrev-ref HEAD
-+        return
-+    fi
-+
-+    # For non-git repos, try to find the latest feature directory
-+    local repo_root=$(get_repo_root)
-+    local specs_dir="$repo_root/specs"
-+
-+    if [[ -d "$specs_dir" ]]; then
-+        local latest_feature=""
-+        local highest=0
-+
-+        for dir in "$specs_dir"/*; do
-+            if [[ -d "$dir" ]]; then
-+                local dirname=$(basename "$dir")
-+                if [[ "$dirname" =~ ^([0-9]{3})- ]]; then
-+                    local number=${BASH_REMATCH[1]}
-+                    number=$((10#$number))
-+                    if [[ "$number" -gt "$highest" ]]; then
-+                        highest=$number
-+                        latest_feature=$dirname
-+                    fi
-+                fi
-+            fi
-+        done
-+
-+        if [[ -n "$latest_feature" ]]; then
-+            echo "$latest_feature"
-+            return
-+        fi
-+    fi
-+
-+    echo "main"  # Final fallback
-+}
-+
-+# Check if we have git available
-+has_git() {
-+    git rev-parse --show-toplevel >/dev/null 2>&1
-+}
-+
-+check_feature_branch() {
-+    local branch="$1"
-+    local has_git_repo="$2"
-+
-+    # For non-git repos, we can't enforce branch naming but still provide output
-+    if [[ "$has_git_repo" != "true" ]]; then
-+        echo "[specify] Warning: Git repository not detected; skipped branch validation" >&2
-+        return 0
-+    fi
-+
-+    if [[ ! "$branch" =~ ^[0-9]{3}- ]]; then
-+        echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
-+        echo "Feature branches should be named like: 001-feature-name" >&2
-+        return 1
-+    fi
-+
-+    return 0
-+}
-+
-+get_feature_dir() { echo "$1/specs/$2"; }
-+
-+# Find feature directory by numeric prefix instead of exact branch match
-+# This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
-+find_feature_dir_by_prefix() {
-+    local repo_root="$1"
-+    local branch_name="$2"
-+    local specs_dir="$repo_root/specs"
-+
-+    # Extract numeric prefix from branch (e.g., "004" from "004-whatever")
-+    if [[ ! "$branch_name" =~ ^([0-9]{3})- ]]; then
-+        # If branch doesn't have numeric prefix, fall back to exact match
-+        echo "$specs_dir/$branch_name"
-+        return
-+    fi
-+
-+    local prefix="${BASH_REMATCH[1]}"
-+
-+    # Search for directories in specs/ that start with this prefix
-+    local matches=()
-+    if [[ -d "$specs_dir" ]]; then
-+        for dir in "$specs_dir"/"$prefix"-*; do
-+            if [[ -d "$dir" ]]; then
-+                matches+=("$(basename "$dir")")
-+            fi
-+        done
-+    fi
-+
-+    # Handle results
-+    if [[ ${#matches[@]} -eq 0 ]]; then
-+        # No match found - return the branch name path (will fail later with clear error)
-+        echo "$specs_dir/$branch_name"
-+    elif [[ ${#matches[@]} -eq 1 ]]; then
-+        # Exactly one match - perfect!
-+        echo "$specs_dir/${matches[0]}"
-+    else
-+        # Multiple matches - this shouldn't happen with proper naming convention
-+        echo "ERROR: Multiple spec directories found with prefix '$prefix': ${matches[*]}" >&2
-+        echo "Please ensure only one spec directory exists per numeric prefix." >&2
-+        echo "$specs_dir/$branch_name"  # Return something to avoid breaking the script
-+    fi
-+}
-+
-+get_feature_paths() {
-+    local repo_root=$(get_repo_root)
-+    local current_branch=$(get_current_branch)
-+    local has_git_repo="false"
-+
-+    if has_git; then
-+        has_git_repo="true"
-+    fi
-+
-+    # Use prefix-based lookup to support multiple branches per spec
-+    local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
-+
-+    cat <<EOF
-+REPO_ROOT='$repo_root'
-+CURRENT_BRANCH='$current_branch'
-+HAS_GIT='$has_git_repo'
-+FEATURE_DIR='$feature_dir'
-+FEATURE_SPEC='$feature_dir/spec.md'
-+IMPL_PLAN='$feature_dir/plan.md'
-+TASKS='$feature_dir/tasks.md'
-+RESEARCH='$feature_dir/research.md'
-+DATA_MODEL='$feature_dir/data-model.md'
-+QUICKSTART='$feature_dir/quickstart.md'
-+CONTRACTS_DIR='$feature_dir/contracts'
-+EOF
-+}
-+
-+check_file() { [[ -f "$1" ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
-+check_dir() { [[ -d "$1" && -n $(ls -A "$1" 2>/dev/null) ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
-+
-
-### .specify/scripts/bash/create-new-feature.sh
-[Large diff hidden: 319 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .specify/scripts/bash/create-new-feature.sh
-```
-
-diff --git a/.specify/scripts/bash/setup-plan.sh b/.specify/scripts/bash/setup-plan.sh
-new file mode 100755
-index 0000000..d01c6d6
---- /dev/null
-+++ b/.specify/scripts/bash/setup-plan.sh
-@@ -0,0 +1,61 @@
-+#!/usr/bin/env bash
-+
-+set -e
-+
-+# Parse command line arguments
-+JSON_MODE=false
-+ARGS=()
-+
-+for arg in "$@"; do
-+    case "$arg" in
-+        --json) 
-+            JSON_MODE=true 
-+            ;;
-+        --help|-h) 
-+            echo "Usage: $0 [--json]"
-+            echo "  --json    Output results in JSON format"
-+            echo "  --help    Show this help message"
-+            exit 0 
-+            ;;
-+        *) 
-+            ARGS+=("$arg") 
-+            ;;
-+    esac
-+done
-+
-+# Get script directory and load common functions
-+SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-+source "$SCRIPT_DIR/common.sh"
-+
-+# Get all paths and variables from common functions
-+eval $(get_feature_paths)
-+
-+# Check if we're on a proper feature branch (only for git repos)
-+check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
-+
-+# Ensure the feature directory exists
-+mkdir -p "$FEATURE_DIR"
-+
-+# Copy plan template if it exists
-+TEMPLATE="$REPO_ROOT/.specify/templates/plan-template.md"
-+if [[ -f "$TEMPLATE" ]]; then
-+    cp "$TEMPLATE" "$IMPL_PLAN"
-+    echo "Copied plan template to $IMPL_PLAN"
-+else
-+    echo "Warning: Plan template not found at $TEMPLATE"
-+    # Create a basic plan file if template doesn't exist
-+    touch "$IMPL_PLAN"
-+fi
-+
-+# Output results
-+if $JSON_MODE; then
-+    printf '{"FEATURE_SPEC":"%s","IMPL_PLAN":"%s","SPECS_DIR":"%s","BRANCH":"%s","HAS_GIT":"%s"}\n' \
-+        "$FEATURE_SPEC" "$IMPL_PLAN" "$FEATURE_DIR" "$CURRENT_BRANCH" "$HAS_GIT"
-+else
-+    echo "FEATURE_SPEC: $FEATURE_SPEC"
-+    echo "IMPL_PLAN: $IMPL_PLAN" 
-+    echo "SPECS_DIR: $FEATURE_DIR"
-+    echo "BRANCH: $CURRENT_BRANCH"
-+    echo "HAS_GIT: $HAS_GIT"
-+fi
-+
-
-### .specify/scripts/bash/update-agent-context.sh
-[Large diff hidden: 861 lines]
-To view this file's diff against the PR base, run:
-```
-git --no-pager diff 0f1cbd74fee4b6eb157b28fe53909d21a15d77a0..HEAD -- .specify/scripts/bash/update-agent-context.sh
-```
-
-diff --git a/.specify/templates/agent-file-template.md b/.specify/templates/agent-file-template.md
-new file mode 100644
-index 0000000..4cc7fd6
---- /dev/null
-+++ b/.specify/templates/agent-file-template.md
-@@ -0,0 +1,28 @@
-+# [PROJECT NAME] Development Guidelines
-+
-+Auto-generated from all feature plans. Last updated: [DATE]
-+
-+## Active Technologies
-+
-+[EXTRACTED FROM ALL PLAN.MD FILES]
-+
-+## Project Structure
-+
-+```text
-+[ACTUAL STRUCTURE FROM PLANS]
-+```
-+
-+## Commands
-+
-+[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES]
-+
-+## Code Style
-+
-+[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE]
-+
-+## Recent Changes
-+
-+[LAST 3 FEATURES AND WHAT THEY ADDED]
-+
-+<!-- MANUAL ADDITIONS START -->
-+<!-- MANUAL ADDITIONS END -->
-
-diff --git a/.specify/templates/checklist-template.md b/.specify/templates/checklist-template.md
-new file mode 100644
-index 0000000..806657d
---- /dev/null
-+++ b/.specify/templates/checklist-template.md
-@@ -0,0 +1,40 @@
-+# [CHECKLIST TYPE] Checklist: [FEATURE NAME]
-+
-+**Purpose**: [Brief description of what this checklist covers]
-+**Created**: [DATE]
-+**Feature**: [Link to spec.md or relevant documentation]
-+
-+**Note**: This checklist is generated by the `/speckit.checklist` command based on feature context and requirements.
-+
-+<!-- 
-+  ============================================================================
-+  IMPORTANT: The checklist items below are SAMPLE ITEMS for illustration only.
-+  
-+  The /speckit.checklist command MUST replace these with actual items based on:
-+  - User's specific checklist request
-+  - Feature requirements from spec.md
-+  - Technical context from plan.md
-+  - Implementation details from tasks.md
-+  
-+  DO NOT keep these sample items in the generated checklist file.
-+  ============================================================================
-+-->
-+
-+## [Category 1]
-+
-+- [ ] CHK001 First checklist item with clear action
-+- [ ] CHK002 Second checklist item
-+- [ ] CHK003 Third checklist item
-+
-+## [Category 2]
-+
-+- [ ] CHK004 Another category item
-+- [ ] CHK005 Item with specific criteria
-+- [ ] CHK006 Final item in this category
-+
-+## Notes
-+
-+- Check items off as completed: `[x]`
-+- Add comments or findings inline
-+- Link to relevant resources or documentation
-+- Items are numbered sequentially for easy reference
-
-diff --git a/.specify/templates/constitution-template.md b/.specify/templates/constitution-template.md
-new file mode 100644
-index 0000000..a4670ff
---- /dev/null
-+++ b/.specify/templates/constitution-template.md
-@@ -0,0 +1,50 @@
-+# [PROJECT_NAME] Constitution
-+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
-+
-+## Core Principles
-+
-+### [PRINCIPLE_1_NAME]
-+<!-- Example: I. Library-First -->
-+[PRINCIPLE_1_DESCRIPTION]
-+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
-+
-+### [PRINCIPLE_2_NAME]
-+<!-- Example: II. CLI Interface -->
-+[PRINCIPLE_2_DESCRIPTION]
-+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
-+
-+### [PRINCIPLE_3_NAME]
-+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-+[PRINCIPLE_3_DESCRIPTION]
-+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
-+
-+### [PRINCIPLE_4_NAME]
-+<!-- Example: IV. Integration Testing -->
-+[PRINCIPLE_4_DESCRIPTION]
-+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
-+
-+### [PRINCIPLE_5_NAME]
-+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-+[PRINCIPLE_5_DESCRIPTION]
-+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-+
-+## [SECTION_2_NAME]
-+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-+
-+[SECTION_2_CONTENT]
-+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-+
-+## [SECTION_3_NAME]
-+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-+
-+[SECTION_3_CONTENT]
-+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-+
-+## Governance
-+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-+
-+[GOVERNANCE_RULES]
-+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+/home/ja/Documents/Cline/Rules/methodology.md:315:- **Spec-Kit Skill**: `Skills/spec-kit/SKILL.md`
+/home/ja/Documents/Cline/scripts/validate-skills.js:53:  'skills-architecture', 'sla', 'smtp', 'social-media', 'spec-driven', 'spec-kit', 'sql',
+/home/ja/Documents/Cline/Workflows/speckit.tasks.md:5:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.tasks.md:10:# /speckit.tasks
+/home/ja/Documents/Cline/Workflows/speckit.tasks.md:131:/speckit.tasks
+/home/ja/Documents/Cline/Workflows/speckit.tasks.md:134:cline -p "Run /speckit.tasks for feature 001"
+/home/ja/Documents/Cline/Workflows/README.md:17:> **Spec-Kit commands** (`/speckit.*`): See [speckit.index.md](speckit.index.md) for the full SDD hub.
+/home/ja/Documents/Cline/Workflows/README.md:36:| [speckit.constitution.md](speckit.constitution.md) | `/speckit.constitution` - Define immutable project principles | New project setup | 30 min |
+/home/ja/Documents/Cline/Workflows/README.md:37:| [speckit.specify.md](speckit.specify.md) | `/speckit.specify` - Create feature spec from intent | New feature request | 1-2 hr |
+/home/ja/Documents/Cline/Workflows/README.md:38:| [speckit.clarify.md](speckit.clarify.md) | `/speckit.clarify` - Resolve spec ambiguities | After spec.md created | 30 min |
+/home/ja/Documents/Cline/Workflows/README.md:39:| [speckit.plan.md](speckit.plan.md) | `/speckit.plan` - Generate technical implementation plan | After clarification | 1-2 hr |
+/home/ja/Documents/Cline/Workflows/README.md:40:| [speckit.tasks.md](speckit.tasks.md) | `/speckit.tasks` - Create executable task breakdown | After plan.md approved | 30 min |
+/home/ja/Documents/Cline/Workflows/README.md:41:| [speckit.implement.md](speckit.implement.md) | `/speckit.implement` - Execute tasks in dependency order | Implementation phase | Varies |
+/home/ja/Documents/Cline/Workflows/README.md:42:| [speckit.analyze.md](speckit.analyze.md) | `/speckit.analyze` - Cross-artifact consistency validation | Before implementation | 20 min |
+/home/ja/Documents/Cline/Workflows/README.md:43:| [speckit.checklist.md](speckit.checklist.md) | `/speckit.checklist` - Requirements quality validation | Any phase | 15 min |
+/home/ja/Documents/Cline/Workflows/README.md:105:SDD:        /speckit.constitution → /speckit.specify → /speckit.clarify
+/home/ja/Documents/Cline/Workflows/README.md:106:            → /speckit.plan → /speckit.tasks → /speckit.implement
+/home/ja/Documents/Cline/Workflows/README.md:112:**Total**: 35 workflows | **Spec-Kit**: 8 commands | See `speckit.index.md` for full SDD hub.
+/home/ja/Documents/Cline/Workflows/speckit.checklist.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.checklist.md:10:# /speckit.checklist
+/home/ja/Documents/Cline/Workflows/speckit.checklist.md:150:/speckit.checklist
+/home/ja/Documents/Cline/Workflows/speckit.checklist.md:153:cline -p "Run /speckit.checklist for spec phase"
+/home/ja/Documents/Cline/Workflows/speckit.checklist.md:156:cline -p "Run /speckit.checklist for feature 001 tasks"
+/home/ja/Documents/Cline/Workflows/speckit.plan.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.plan.md:10:# /speckit.plan
+/home/ja/Documents/Cline/Workflows/speckit.plan.md:192:/speckit.plan
+/home/ja/Documents/Cline/Workflows/speckit.plan.md:195:cline -p "Run /speckit.plan for feature 001"
+/home/ja/Documents/Cline/Workflows/speckit.analyze.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.analyze.md:10:# /speckit.analyze
+/home/ja/Documents/Cline/Workflows/speckit.analyze.md:131:/speckit.analyze
+/home/ja/Documents/Cline/Workflows/speckit.analyze.md:134:cline -p "Run /speckit.analyze for feature 001"
+/home/ja/Documents/Cline/Workflows/speckit.clarify.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.clarify.md:10:# /speckit.clarify
+/home/ja/Documents/Cline/Workflows/speckit.clarify.md:80:/speckit.clarify
+/home/ja/Documents/Cline/Workflows/speckit.clarify.md:83:cline -p "Run /speckit.clarify for feature 001"
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:9:  - spec-kit
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:18:**Skill**: `Skills/spec-kit/SKILL.md`
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:47:uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:94:/speckit.constitution Create principles focused on [quality focus areas]
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:127:/speckit.specify [feature description in natural language]
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:161:/speckit.clarify
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:201:/speckit.plan [tech stack and architecture choices]
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:240:/speckit.tasks
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:279:/speckit.implement
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:319:/speckit.analyze
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:335:/speckit.checklist [domain]
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:351:| Plan inconsistencies | Run `/speckit.analyze` |
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:352:| Quality validation | Run `/speckit.checklist` |
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:366:- **Skill**: `Skills/spec-kit/SKILL.md`
+/home/ja/Documents/Cline/Workflows/spec-driven-development.md:367:- **Source**: github.com/github/spec-kit
+/home/ja/Documents/Cline/Workflows/speckit.index.md:3:  Spec-Kit command hub: all /speckit.* Cline slash commands for Spec-Driven
+/home/ja/Documents/Cline/Workflows/speckit.index.md:9:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.index.md:32:| [`/speckit.constitution`](speckit.constitution.md) | `.specify/memory/constitution.md` | Define non-negotiable principles before any spec work |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:38:| [`/speckit.specify`](speckit.specify.md) | `specs/###-name/spec.md` | Create feature spec from natural language intent |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:39:| [`/speckit.clarify`](speckit.clarify.md) | Annotations on `spec.md` | Resolve ambiguities before planning |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:40:| [`/speckit.checklist`](speckit.checklist.md) | Quality report | Validate requirements quality at any phase |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:46:| [`/speckit.plan`](speckit.plan.md) | `specs/###-name/plan.md` | Generate technical implementation plan from spec |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:52:| [`/speckit.tasks`](speckit.tasks.md) | `specs/###-name/tasks.md` | Create dependency-ordered task breakdown |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:58:| [`/speckit.implement`](speckit.implement.md) | Execute tasks from `tasks.md` following TDD |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:59:| [`/speckit.analyze`](speckit.analyze.md) | Cross-artifact consistency check before implementation |
+/home/ja/Documents/Cline/Workflows/speckit.index.md:68:npm run speckit:constitution   # Phase 0 - constitution setup
+/home/ja/Documents/Cline/Workflows/speckit.index.md:69:npm run speckit:specify        # Phase 1 - feature specification
+/home/ja/Documents/Cline/Workflows/speckit.index.md:70:npm run speckit:plan           # Phase 2 - implementation plan
+/home/ja/Documents/Cline/Workflows/speckit.index.md:71:npm run speckit:tasks          # Phase 3 - task breakdown
+/home/ja/Documents/Cline/Workflows/speckit.index.md:72:npm run speckit:implement      # Phase 4 - implementation
+/home/ja/Documents/Cline/Workflows/speckit.index.md:94:New project?          → Start with /speckit.constitution
+/home/ja/Documents/Cline/Workflows/speckit.index.md:95:New feature?          → /speckit.specify → /speckit.clarify → /speckit.plan
+/home/ja/Documents/Cline/Workflows/speckit.index.md:96:Ready to build?       → /speckit.tasks → /speckit.implement
+/home/ja/Documents/Cline/Workflows/speckit.index.md:97:Quality check?        → /speckit.checklist (any phase)
+/home/ja/Documents/Cline/Workflows/speckit.index.md:98:Pre-impl validation?  → /speckit.analyze
+/home/ja/Documents/Cline/Workflows/speckit.implement.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.implement.md:10:# /speckit.implement
+/home/ja/Documents/Cline/Workflows/speckit.implement.md:101:/speckit.implement
+/home/ja/Documents/Cline/Workflows/speckit.implement.md:104:cline -p "Run /speckit.implement starting from T005"
+/home/ja/Documents/Cline/Workflows/speckit.implement.md:107:cline -p "Continue /speckit.implement for feature 001"
+/home/ja/Documents/Cline/Workflows/speckit.specify.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.specify.md:10:# /speckit.specify
+/home/ja/Documents/Cline/Workflows/speckit.specify.md:84:/speckit.specify
+/home/ja/Documents/Cline/Workflows/speckit.specify.md:87:cline -p "Run /speckit.specify for user authentication feature"
+/home/ja/Documents/Cline/Workflows/speckit.constitution.md:6:  - speckit
+/home/ja/Documents/Cline/Workflows/speckit.constitution.md:10:# /speckit.constitution
+/home/ja/Documents/Cline/Workflows/speckit.constitution.md:62:/speckit.constitution
+/home/ja/Documents/Cline/Workflows/speckit.constitution.md:65:cline -p "Run /speckit.constitution for this project"
+/home/ja/Documents/Cline/docs/adr/0008-spec-driven-development-adoption.md:104:- **Research**: `docs/learnings/2026-03-02-spec-kit-best-practices-2026.md`
+/home/ja/Documents/Cline/docs/adr/0008-spec-driven-development-adoption.md:105:- **Source**: github.com/github/spec-kit (MIT License)
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:37:uvx --from git+https://github.com/github/spec-kit.git \
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:76:| Constitution templates | `speckit.constitution` | `Workflows/speckit.constitution.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:77:| Spec templates | `speckit.specify` | `Workflows/speckit.specify.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:78:| Clarification workflow | `speckit.clarify` | `Workflows/speckit.clarify.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:79:| Plan generation | `speckit.plan` | `Workflows/speckit.plan.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:80:| Task breakdown | `speckit.tasks` | `Workflows/speckit.tasks.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:81:| Implementation execution | `speckit.implement` | `Workflows/speckit.implement.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:82:| Cross-artifact analysis | `speckit.analyze` | `Workflows/speckit.analyze.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:83:| Quality checklists | `speckit.checklist` | `Workflows/speckit.checklist.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:84:| SDD Skill | Complete methodology | `Skills/spec-kit/SKILL.md` |
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:97:1. Complete SDD methodology in `Skills/spec-kit/SKILL.md`
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:98:2. All 8 phase workflows in `Workflows/speckit.*.md`
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:125:Skills/spec-kit/SKILL.md
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:143:├── speckit.constitution.md      # Phase 1: Principles
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:144:├── speckit.specify.md           # Phase 2: Feature spec
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:145:├── speckit.clarify.md           # Phase 3: Ambiguity resolution
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:146:├── speckit.plan.md              # Phase 4: Technical plan
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:147:├── speckit.tasks.md             # Phase 5: Task breakdown
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:148:├── speckit.implement.md         # Phase 6: Execution
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:149:├── speckit.analyze.md           # Quality: Cross-artifact consistency
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:150:└── speckit.checklist.md         # Quality: Requirements validation
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:166:- **specify-cli Source**: https://github.com/github/spec-kit
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:167:- **Installation Docs**: https://github.github.com/spec-kit/installation.html
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-specify-cli-research.md:168:- **Cline SDD Skill**: `Skills/spec-kit/SKILL.md`
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:12:  - spec-kit
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:164:uvx --from git+https://github.com/github/spec-kit.git specify init <PROJECT_NAME>
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:167:/speckit.constitution  # Define immutable principles
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:168:/speckit.specify       # Create feature specification
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:169:/speckit.plan          # Generate implementation plan
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:170:/speckit.tasks         # Create task breakdown
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:171:/speckit.implement     # Execute tasks
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:172:/speckit.analyze       # Validate plan
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:185:    Lead->>Claude: /spec-kitty.specify
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:195:    Lead->>Gemini: /spec-kitty.review WP01
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:247:- New features: `/speckit.specify` → `/speckit.plan` → `/speckit.tasks`
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:270:/speckit.constitution This project follows "Security-First" principles.
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:274:/speckit.specify Build a photo album organizer. Albums are grouped by
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:492:/speckit.constitution <principles>  # Define immutable rules
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:493:/speckit.specify <description>      # Create feature spec
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:494:/speckit.plan <tech-stack>          # Generate implementation plan
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:495:/speckit.tasks                      # Break into tasks
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:496:/speckit.implement                  # Execute tasks
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:497:/speckit.analyze                    # Validate plan
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:544:4. **GitHub Spec-Kit Repository**: https://github.com/github/spec-kit
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:545:5. **Spec Kitty Repository**: https://github.com/priivacy-ai/spec-kitty
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:556:- `Skills/spec-kit/SKILL.md` — satware AG skill definition
+/home/ja/Documents/Cline/docs/learnings/2026-03-02-spec-kit-best-practices-2026.md:557:- `Workflows/speckit.*.md` — Workflow commands
+/home/ja/Documents/Cline/docs/learnings/2026-03-03-skill-frontmatter-single-line-description.md:49:| `spec-kit` | `description: >-` (5 lines) | `description: "..."` (1 line) |
+/home/ja/Documents/Cline/docs/plans/2026-03-05-rules-skills-workflows-hooks-improvements.md:267:- 8 `speckit.*.md` files with no index entry point
+/home/ja/Documents/Cline/docs/plans/2026-03-05-rules-skills-workflows-hooks-improvements.md:273:   - Development (agentic-dev-loop, speckit phases, validate-commit-continue)
+/home/ja/Documents/Cline/docs/plans/2026-03-05-rules-skills-workflows-hooks-improvements.md:276:2. Create `Workflows/speckit.index.md` as speckit hub linking all 8 phases
+/home/ja/Documents/Cline/docs/plans/2026-03-05-rules-skills-workflows-hooks-improvements.md:279:**Files**: `Workflows/README.md` (new), `Workflows/speckit.index.md` (new), possible merges
+/home/ja/Documents/Cline/docs/plans/2026-03-02-project-health-audit.md:176:**Action**: Reorder case patterns so the more specific `spec|specification|constitution|speckit|spec-driven|sdd` comes before the generic `test|testing|spec|coverage|vitest|playwright`, or remove `spec` from the generic pattern.
+/home/ja/Documents/Cline/package.json:39:    "speckit:constitution": "cline 'Follow Workflows/speckit.constitution.md'",
+/home/ja/Documents/Cline/package.json:40:    "speckit:specify": "cline 'Follow Workflows/speckit.specify.md'",
+/home/ja/Documents/Cline/package.json:41:    "speckit:plan": "cline 'Follow Workflows/speckit.plan.md'",
+/home/ja/Documents/Cline/package.json:42:    "speckit:tasks": "cline 'Follow Workflows/speckit.tasks.md'",
+/home/ja/Documents/Cline/package.json:43:    "speckit:implement": "cline 'Follow Workflows/speckit.implement.md'"
+/home/ja/Documents/Cline/Skills/marketplace.json:11:    "1.14.0": "Added spec-kit skill for Spec-Driven Development methodology (Frankenstein synthesis from github/spec-kit) and reconciled registry drift by adding 5 missing skills: amicron-firebird, caldav-webcal, cli-tools, markdown-to-pdf, prompt-engineering",
+/home/ja/Documents/Cline/Skills/marketplace.json:40:        "spec-kit",
+/home/ja/Documents/Cline/Skills/marketplace.json:155:        "skill": "spec-kit",
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:2:name: spec-kit
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:3:description: "Spec-Driven Development methodology - specifications as executable artifacts that generate code. Activates when practicing SDD, creating feature specs, implementation plans, or using /speckit.* commands for structured development. Based on 2026-03-02 research from Context7, Firecrawl, and HuggingFace (see docs/learnings/2026-03-02-spec-kit-best-practices-2026.md)."
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:10:  - spec-kit
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:30:- Using `/speckit.*` slash commands
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:70:| `/speckit.constitution` | Define project principles | `.specify/memory/constitution.md` |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:71:| `/speckit.specify` | Create feature specification | `specs/###-feature/spec.md` |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:72:| `/speckit.clarify` | Resolve ambiguities | Updated `spec.md` + Clarifications section |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:73:| `/speckit.plan` | Generate implementation plan | `plan.md`, `data-model.md`, `contracts/` |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:74:| `/speckit.tasks` | Create task breakdown | `tasks.md` with dependency ordering |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:75:| `/speckit.implement` | Execute implementation | Completed tasks, code files |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:81:| `/speckit.analyze` | Cross-artifact consistency | After tasks, before implement |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:82:| `/speckit.checklist` | Requirements quality validation | Any phase for quality gates |
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:278:Create `.cline/commands/speckit.*.md` files:
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:282:├── speckit.constitution.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:283:├── speckit.specify.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:284:├── speckit.clarify.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:285:├── speckit.plan.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:286:├── speckit.tasks.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:287:├── speckit.implement.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:288:├── speckit.analyze.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:289:└── speckit.checklist.md
+/home/ja/Documents/Cline/Skills/spec-kit/SKILL.md:300:- **Source**: github.com/github/spec-kit (MIT License)
+/home/ja/Documents/Cline/Skills/spec-kit/docs/README.md:2:description: 'Documentation index for the spec-kit skill - guides, examples, and references.'
+/home/ja/Documents/Cline/Skills/spec-kit/docs/README.md:6:  - spec-kit
+/home/ja/Documents/Cline/CHANGELOG.md:30:- **Spec-Kit Slash Commands**: Implemented 8 SDD-focused commands in `.cline/commands/` (e.g., `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`) to enable structured feature development.
+/home/ja/Documents/Cline/CHANGELOG.md:206:- `Workflows/speckit.index.md`: Spec-Kit command hub linking all /speckit.*
+/home/ja/Documents/Cline/CHANGELOG.md:208:- `package.json` speckit aliases: `speckit:constitution/specify/plan/tasks/implement`
+/home/ja/Documents/Cline/CHANGELOG.md:275:  - `Skills/spec-kit/SKILL.md`: Updated with 2026-03-02 research findings
+/home/ja/Documents/Cline/CHANGELOG.md:277:  - `docs/learnings/2026-03-02-spec-kit-best-practices-2026.md`: Research document with Context7, Firecrawl, HuggingFace findings
+/home/ja/Documents/Cline/CHANGELOG.md:284:  - v1.14.0: Added `spec-kit` skill (Frankenstein synthesis)
+/home/ja/Documents/Cline/CHANGELOG.md:301:  `Skills/kitty/SKILL.md`, `Skills/linux-setup/SKILL.md`, and `Skills/spec-kit/SKILL.md` to single-line quoted descriptions.
+/home/ja/Documents/Cline/Hooks/UserPromptSubmit:283:  KEYWORDS+="|spec|specification|constitution|speckit|spec-driven|sdd"
+/home/ja/Documents/Cline/Hooks/UserPromptSubmit:557:      spec|specification|constitution|speckit|spec-driven|sdd)
+/home/ja/Documents/Cline/Hooks/UserPromptSubmit:558:        add_context_candidate "medium" "SKILL_AVAILABLE: spec-kit. Use use_skill('spec-kit') for SDD methodology. Four-phase workflow: SPECIFY→PLAN→TASKS→IMPLEMENT. See Rules/condensed/spec-driven-development-condensed.md. "
