@@ -279,6 +279,13 @@ AGENT_CONFIG = {
         "install_url": "https://code.kimi.com/",
         "requires_cli": True,
     },
+    "cline": {
+        "name": "Cline CLI",
+        "folder": ".cline/",
+        "commands_subdir": "commands",
+        "install_url": "https://github.com/cline/cline",
+        "requires_cli": True,
+    },
     "generic": {
         "name": "Generic (bring your own agent)",
         "folder": None,  # Set dynamically via --ai-commands-dir

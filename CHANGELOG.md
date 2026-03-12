@@ -7,6 +7,31 @@ Recent changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4-rc.1] - 2026-03-12
+
+### Added
+
+- **Logo and Branding Update**: Integrated new Spec Kit logos across README and documentation.
+- **Spec-Kit Command Hub**: Introduced a comprehensive documentation section for Spec-Kit commands.
+- **Documentation Restructuring**: Major updates to `docs/` including `index.md`, `spec-driven-development.md`, and individual command documentations.
+- **Template Enhancements**: Updated standard SDD templates for better guidance and consistency.
+- **Improved Release Automation**: Updated release scripts to support new agents and branding.
+
+### Changed
+
+- **Junie Agent Support**: Finalized and verified JetBrains Junie AI agent integration.
+- **Cline CLI Agent Support**: Finalized and verified Cline CLI agent integration.
+
+## [0.2.3-speck] - 2026-03-12
+
+### Added
+
+- **Cline CLI Agent Support**: Integrated the Cline CLI as a natively supported agent.
+  - Added `cline` to `AGENT_CONFIG` with support for its specific CLI options.
+  - Updated project initialization and release scripts to generate `.cline/commands/` directory.
+  - Added support for Cline context updates in bash and PowerShell scripts.
+  - Updated documentation (`README.md`, `AGENTS.md`) to include Cline as a supported agent.
+
 ## [0.2.2-speck] - 2026-03-12
 
 ### Added

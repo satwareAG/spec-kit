@@ -80,6 +80,7 @@ BOB_FILE="$REPO_ROOT/AGENTS.md"
 JUNIE_FILE="$REPO_ROOT/.junie/rules/specify-rules.md"
 VIBE_FILE="$REPO_ROOT/.vibe/agents/specify-agents.md"
 KIMI_FILE="$REPO_ROOT/KIMI.md"
+CLINE_FILE="$REPO_ROOT/.cline/rules/specify-rules.md"
 
 # Template file
 TEMPLATE_FILE="$REPO_ROOT/.specify/templates/agent-file-template.md"
@@ -673,12 +674,15 @@ update_specific_agent() {
         kimi)
             update_agent_file "$KIMI_FILE" "Kimi Code"
             ;;
+        cline)
+            update_agent_file "$CLINE_FILE" "Cline CLI"
+            ;;
         generic)
             log_info "Generic agent: no predefined context file. Use the agent-specific update script for your agent."
             ;;
         *)
             log_error "Unknown agent type '$agent_type'"
-            log_error "Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|junie|generic"
+            log_error "Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|junie|generic"
             exit 1
             ;;
     esac
@@ -779,6 +783,11 @@ update_all_existing_agents() {
     
     if [[ -f "$KIMI_FILE" ]]; then
         update_agent_file "$KIMI_FILE" "Kimi Code"
+        found_agent=true
+    fi
+    
+    if [[ -f "$CLINE_FILE" ]]; then
+        update_agent_file "$CLINE_FILE" "Cline CLI"
         found_agent=true
     fi
     

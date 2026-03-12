@@ -25,7 +25,7 @@ Relies on common helper functions in common.ps1
 #>
 param(
     [Parameter(Position=0)]
-    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','q','agy','bob','vibe','kimi','junie','generic')]
+    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','q','agy','bob','vibe','kimi','cline','junie','generic')]
     [string]$AgentType
 )
 
@@ -65,6 +65,7 @@ $BOB_FILE      = Join-Path $REPO_ROOT 'AGENTS.md'
 $JUNIE_FILE    = Join-Path $REPO_ROOT '.junie/rules/specify-rules.md'
 $VIBE_FILE     = Join-Path $REPO_ROOT '.vibe/agents/specify-agents.md'
 $KIMI_FILE     = Join-Path $REPO_ROOT 'KIMI.md'
+$CLINE_FILE    = Join-Path $REPO_ROOT '.cline/rules/specify-rules.md'
 
 $TEMPLATE_FILE = Join-Path $REPO_ROOT '.specify/templates/agent-file-template.md'
 
@@ -410,8 +411,9 @@ function Update-SpecificAgent {
         'junie'    { Update-AgentFile -TargetFile $JUNIE_FILE    -AgentName 'Junie' }
         'vibe'     { Update-AgentFile -TargetFile $VIBE_FILE     -AgentName 'Mistral Vibe' }
         'kimi'     { Update-AgentFile -TargetFile $KIMI_FILE     -AgentName 'Kimi Code' }
+        'cline'    { Update-AgentFile -TargetFile $CLINE_FILE    -AgentName 'Cline CLI' }
         'generic'  { Write-Info 'Generic agent: no predefined context file. Use the agent-specific update script for your agent.' }
-        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|junie|generic'; return $false }
+        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|junie|generic'; return $false }
     }
 }
 
@@ -438,6 +440,7 @@ function Update-AllExistingAgents {
     if (Test-Path $JUNIE_FILE)    { if (-not (Update-AgentFile -TargetFile $JUNIE_FILE    -AgentName 'Junie')) { $ok = $false }; $found = $true }
     if (Test-Path $VIBE_FILE)     { if (-not (Update-AgentFile -TargetFile $VIBE_FILE     -AgentName 'Mistral Vibe')) { $ok = $false }; $found = $true }
     if (Test-Path $KIMI_FILE)     { if (-not (Update-AgentFile -TargetFile $KIMI_FILE     -AgentName 'Kimi Code')) { $ok = $false }; $found = $true }
+    if (Test-Path $CLINE_FILE)    { if (-not (Update-AgentFile -TargetFile $CLINE_FILE    -AgentName 'Cline CLI')) { $ok = $false }; $found = $true }
     if (-not $found) {
         Write-Info 'No existing agent files found, creating default Claude file...'
         if (-not (Update-AgentFile -TargetFile $CLAUDE_FILE -AgentName 'Claude Code')) { $ok = $false }
@@ -452,7 +455,7 @@ function Print-Summary {
     if ($NEW_FRAMEWORK) { Write-Host "  - Added framework: $NEW_FRAMEWORK" }
     if ($NEW_DB -and $NEW_DB -ne 'N/A') { Write-Host "  - Added database: $NEW_DB" }
     Write-Host ''
-    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|junie|generic]'
+    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|junie|generic]'
 }
 
 function Main {
