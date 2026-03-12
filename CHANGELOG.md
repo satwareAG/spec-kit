@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Junie Agent Support**: Finalized and verified JetBrains Junie AI agent integration.
 - **Cline CLI Agent Support**: Finalized and verified Cline CLI agent integration.
 - **SDD Workflow Documentation**: Unified agent system language and updated workflows in `Documents/Cline` to support multiple AI assistants.
+- **Repository Migration**: Updated all documentation and installation links to the new official repository at `https://github.com/jane-alesi/spec-kit`.
 
 ## [0.2.4-rc.1] - 2026-03-12
 

@@ -1,0 +1,57 @@
+Command finished with exit code 1.
+Command output:
+Installed 5 packages in 7ms
+============================= test session starts ==============================
+platform linux -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- /home/ja/.cache/uv/builds-v0/.tmpVeLEDb/bin/python
+cachedir: .pytest_cache
+rootdir: /home/ja/external/spec-kit
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 27 items
+
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_runtime_config_uses_kiro_cli_and_removes_q PASSED [  3%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_extension_registrar_uses_kiro_cli_and_removes_q PASSED [  7%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_extension_registrar_includes_codex PASSED [ 11%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_release_agent_lists_include_kiro_cli_and_exclude_q PASSED [ 14%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_release_ps_switch_has_shai_and_agy_generation PASSED [ 18%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_init_ai_help_includes_roo_and_kiro_alias PASSED [ 22%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_devcontainer_kiro_installer_uses_pinned_checksum PASSED [ 25%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_release_output_targets_kiro_prompt_dir PASSED [ 29%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_agent_context_scripts_use_kiro_cli PASSED [ 33%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_runtime_config_includes_tabnine PASSED [ 37%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_extension_registrar_includes_tabnine PASSED [ 40%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_release_agent_lists_include_tabnine PASSED [ 44%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_release_scripts_generate_tabnine_toml_commands PASSED [ 48%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_github_release_includes_tabnine_packages PASSED [ 51%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_agent_context_scripts_include_tabnine PASSED [ 55%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_ai_help_includes_tabnine PASSED [ 59%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_kimi_in_agent_config PASSED [ 62%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_kimi_in_extension_registrar PASSED [ 66%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_kimi_in_release_agent_lists PASSED [ 70%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_kimi_in_powershell_validate_set PASSED [ 74%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_kimi_in_github_release_output PASSED [ 77%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_agent_config PASSED [ 81%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_extension_registrar FAILED [ 85%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_release_agent_lists FAILED [ 88%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_github_release_output FAILED [ 92%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_ai_help_includes_junie_and_cline PASSED [ 96%]
+tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_ai_help_includes_kimi PASSED [100%]
+
+=================================== FAILURES ===================================
+____ TestAgentConfigConsistency.test_junie_and_cline_in_extension_registrar ____
+tests/test_agent_config_consistency.py:242: in test_junie_and_cline_in_extension_registrar
+    assert "junie" in cfg
+E   AssertionError: assert 'junie' in {'amp': {'args': '$ARGUMENTS', 'dir': '.agents/commands', 'extension': '.md', 'format': 'markdown'}, 'auggie': {'args': '$ARGUMENTS', 'dir': '.augment/rules', 'extension': '.md', 'format': 'markdown'}, 'bob': {'args': '$ARGUMENTS', 'dir': '.bob/commands', 'extension': '.md', 'format': 'markdown'}, 'claude': {'args': '$ARGUMENTS', 'dir': '.claude/commands', 'extension': '.md', 'format': 'markdown'}, ...}
+____ TestAgentConfigConsistency.test_junie_and_cline_in_release_agent_lists ____
+tests/test_agent_config_consistency.py:262: in test_junie_and_cline_in_release_agent_lists
+    assert "junie" in ps_agents
+E   AssertionError: assert 'junie' in ['claude', 'gemini', 'copilot', 'cursor-agent', 'qwen', 'opencode', ...]
+___ TestAgentConfigConsistency.test_junie_and_cline_in_github_release_output ___
+tests/test_agent_config_consistency.py:272: in test_junie_and_cline_in_github_release_output
+    assert "spec-kit-template-cline-sh-" in gh_release_text
+E   assert 'spec-kit-template-cline-sh-' in '#!/usr/bin/env bash\nset -euo pipefail\n\n# create-github-release.sh\n# Create a GitHub release with all template zip files\n# Usage: create-github-release.sh <version>\n\nif [[ $# -ne 1 ]]; then\n  echo "Usage: $0 <version>" >&2\n  exit 1\nfi\n\nVERSION="$1"\n\n# Remove \'v\' prefix from version for release title\nVERSION_NO_V=${VERSION#v}\n\ngh release create "$VERSION" \\\n  .genreleases/spec-kit-template-copilot-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-copilot-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-claude-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-claude-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-gemini-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-gemini-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-cursor-agent-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-cursor-agent-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-opencode-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-opencode-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-qwen-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-qwen-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-windsurf-sh-"$VERSION".zip ...ERSION".zip \\\n  .genreleases/spec-kit-template-shai-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-shai-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-tabnine-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-tabnine-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kiro-cli-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kiro-cli-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-agy-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-agy-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-bob-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-bob-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-junie-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-junie-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-vibe-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-vibe-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kimi-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kimi-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-generic-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-generic-ps-"$VERSION".zip \\\n  --title "Spec Kit Templates - $VERSION_NO_V" \\\n  --notes-file release_notes.md\n'
+=========================== short test summary info ============================
+FAILED tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_extension_registrar - AssertionError: assert 'junie' in {'amp': {'args': '$ARGUMENTS', 'dir': '.agents/commands', 'extension': '.md', 'format': 'markdown'}, 'auggie': {'args': '$ARGUMENTS', 'dir': '.augment/rules', 'extension': '.md', 'format': 'markdown'}, 'bob': {'args': '$ARGUMENTS', 'dir': '.bob/commands', 'extension': '.md', 'format': 'markdown'}, 'claude': {'args': '$ARGUMENTS', 'dir': '.claude/commands', 'extension': '.md', 'format': 'markdown'}, ...}
+FAILED tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_release_agent_lists - AssertionError: assert 'junie' in ['claude', 'gemini', 'copilot', 'cursor-agent', 'qwen', 'opencode', ...]
+FAILED tests/test_agent_config_consistency.py::TestAgentConfigConsistency::test_junie_and_cline_in_github_release_output - assert 'spec-kit-template-cline-sh-' in '#!/usr/bin/env bash\nset -euo pipefail\n\n# create-github-release.sh\n# Create a GitHub release with all template zip files\n# Usage: create-github-release.sh <version>\n\nif [[ $# -ne 1 ]]; then\n  echo "Usage: $0 <version>" >&2\n  exit 1\nfi\n\nVERSION="$1"\n\n# Remove \'v\' prefix from version for release title\nVERSION_NO_V=${VERSION#v}\n\ngh release create "$VERSION" \\\n  .genreleases/spec-kit-template-copilot-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-copilot-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-claude-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-claude-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-gemini-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-gemini-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-cursor-agent-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-cursor-agent-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-opencode-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-opencode-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-qwen-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-qwen-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-windsurf-sh-"$VERSION".zip ...ERSION".zip \\\n  .genreleases/spec-kit-template-shai-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-shai-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-tabnine-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-tabnine-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kiro-cli-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kiro-cli-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-agy-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-agy-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-bob-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-bob-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-junie-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-junie-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-vibe-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-vibe-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kimi-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-kimi-ps-"$VERSION".zip \\\n  .genreleases/spec-kit-template-generic-sh-"$VERSION".zip \\\n  .genreleases/spec-kit-template-generic-ps-"$VERSION".zip \\\n  --title "Spec Kit Templates - $VERSION_NO_V" \\\n  --notes-file release_notes.md\n'
+========================= 3 failed, 24 passed in 0.35s =========================

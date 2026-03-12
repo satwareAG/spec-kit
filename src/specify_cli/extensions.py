@@ -774,6 +774,18 @@ class CommandRegistrar:
             "args": "$ARGUMENTS",
             "extension": ".md"
         },
+        "junie": {
+            "dir": ".junie/commands",
+            "format": "markdown",
+            "args": "$ARGUMENTS",
+            "extension": ".md"
+        },
+        "cline": {
+            "dir": ".cline/commands",
+            "format": "markdown",
+            "args": "$ARGUMENTS",
+            "extension": ".md"
+        },
         "kimi": {
             "dir": ".kimi/skills",
             "format": "markdown",

@@ -223,6 +223,60 @@ class TestAgentConfigConsistency:
         assert "spec-kit-template-kimi-sh-" in gh_release_text
         assert "spec-kit-template-kimi-ps-" in gh_release_text
 
+    # --- Junie and Cline CLI consistency checks ---
+
+    def test_junie_and_cline_in_agent_config(self):
+        """AGENT_CONFIG should include junie and cline with correct settings."""
+        assert "junie" in AGENT_CONFIG
+        assert AGENT_CONFIG["junie"]["folder"] == ".junie/"
+        assert AGENT_CONFIG["junie"]["requires_cli"] is False
+
+        assert "cline" in AGENT_CONFIG
+        assert AGENT_CONFIG["cline"]["folder"] == ".cline/"
+        assert AGENT_CONFIG["cline"]["requires_cli"] is True
+
+    def test_junie_and_cline_in_extension_registrar(self):
+        """Extension command registrar should include junie and cline."""
+        cfg = CommandRegistrar.AGENT_CONFIGS
+
+        assert "junie" in cfg
+        assert cfg["junie"]["dir"] == ".junie/commands"
+
+        assert "cline" in cfg
+        assert cfg["cline"]["dir"] == ".cline/commands"
+
+    def test_junie_and_cline_in_release_agent_lists(self):
+        """Bash and PowerShell release scripts should include junie and cline in agent lists."""
+        sh_text = (REPO_ROOT / ".github" / "workflows" / "scripts" / "create-release-packages.sh").read_text(encoding="utf-8")
+        ps_text = (REPO_ROOT / ".github" / "workflows" / "scripts" / "create-release-packages.ps1").read_text(encoding="utf-8")
+
+        sh_match = re.search(r"ALL_AGENTS=\(([^)]*)\)", sh_text)
+        assert sh_match is not None
+        sh_agents = sh_match.group(1).split()
+
+        ps_match = re.search(r"\$AllAgents = @\(([^)]*)\)", ps_text)
+        assert ps_match is not None
+        ps_agents = re.findall(r"'([^']+)'", ps_match.group(1))
+
+        assert "junie" in sh_agents
+        assert "junie" in ps_agents
+        assert "cline" in sh_agents
+        assert "cline" in ps_agents
+
+    def test_junie_and_cline_in_github_release_output(self):
+        """GitHub release script should include junie and cline template packages."""
+        gh_release_text = (REPO_ROOT / ".github" / "workflows" / "scripts" / "create-github-release.sh").read_text(encoding="utf-8")
+
+        assert "spec-kit-template-junie-sh-" in gh_release_text
+        assert "spec-kit-template-junie-ps-" in gh_release_text
+        assert "spec-kit-template-cline-sh-" in gh_release_text
+        assert "spec-kit-template-cline-ps-" in gh_release_text
+
+    def test_ai_help_includes_junie_and_cline(self):
+        """CLI help text for --ai should include junie and cline."""
+        assert "junie" in AI_ASSISTANT_HELP
+        assert "cline" in AI_ASSISTANT_HELP
+
     def test_ai_help_includes_kimi(self):
         """CLI help text for --ai should include kimi."""
         assert "kimi" in AI_ASSISTANT_HELP
