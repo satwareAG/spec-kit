@@ -1,4 +1,4 @@
-# Spec Kit
+# <img src="../media/logos/logo_400.webp" alt="Spec Kit Logo" width="50" height="50" style="vertical-align: middle;"/> Spec Kit
 
 *Build high-quality software faster.*
 
@@ -14,6 +14,7 @@ Spec-Driven Development **flips the script** on traditional software development
 - [Quick Start Guide](quickstart.md)
 - [Upgrade Guide](upgrade.md)
 - [Local Development](local-development.md)
+- [Command Hub](commands.md)
 
 ## Core Philosophy
 

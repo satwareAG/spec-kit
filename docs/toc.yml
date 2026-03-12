@@ -5,6 +5,8 @@
 # Getting started section
 - name: Getting Started
   items:
+    - name: Specification-Driven Development
+      href: spec-driven-development.md
     - name: Installation
       href: installation.md
     - name: Quick Start
@@ -15,5 +17,24 @@
 # Development workflows
 - name: Development
   items:
+    - name: Command Hub
+      href: commands.md
+      items:
+        - name: /speckit.constitution
+          href: speckit.constitution.md
+        - name: /speckit.specify
+          href: speckit.specify.md
+        - name: /speckit.clarify
+          href: speckit.clarify.md
+        - name: /speckit.checklist
+          href: speckit.checklist.md
+        - name: /speckit.plan
+          href: speckit.plan.md
+        - name: /speckit.tasks
+          href: speckit.tasks.md
+        - name: /speckit.implement
+          href: speckit.implement.md
+        - name: /speckit.analyze
+          href: speckit.analyze.md
     - name: Local Development
       href: local-development.md
