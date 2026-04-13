@@ -16,6 +16,8 @@ VERSION="$1"
 VERSION_NO_V=${VERSION#v}
 
 gh release create "$VERSION" \
+  .genreleases/spec-kit-template-hermes-sh-"$VERSION".zip \
+  .genreleases/spec-kit-template-hermes-ps-"$VERSION".zip \
   .genreleases/spec-kit-template-copilot-sh-"$VERSION".zip \
   .genreleases/spec-kit-template-copilot-ps-"$VERSION".zip \
   .genreleases/spec-kit-template-claude-sh-"$VERSION".zip \

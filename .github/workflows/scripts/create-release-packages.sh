@@ -297,6 +297,9 @@ build_variant() {
     cline)
       mkdir -p "$base_dir/.cline/commands"
       generate_commands cline md "\$ARGUMENTS" "$base_dir/.cline/commands" "$script" ;;
+    hermes)
+      mkdir -p "$base_dir/.hermes/commands"
+      generate_commands hermes md "\$ARGUMENTS" "$base_dir/.hermes/commands" "$script" ;;
     generic)
       mkdir -p "$base_dir/.speckit/commands"
       generate_commands generic md "\$ARGUMENTS" "$base_dir/.speckit/commands" "$script" ;;
@@ -306,7 +309,7 @@ build_variant() {
 }
 
 # Determine agent list
-ALL_AGENTS=(claude gemini copilot cursor-agent qwen opencode windsurf junie cline codex kilocode auggie roo codebuddy amp shai tabnine kiro-cli agy bob vibe qodercli kimi generic)
+ALL_AGENTS=(claude gemini copilot cursor-agent qwen opencode windsurf junie cline hermes codex kilocode auggie roo codebuddy amp shai tabnine kiro-cli agy bob vibe qodercli kimi generic)
 ALL_SCRIPTS=(sh ps)
 
 norm_list() {
