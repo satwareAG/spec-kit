@@ -70,6 +70,10 @@ Follow this execution flow:
    - Any files flagged for manual follow-up.
    - Suggested commit message (e.g., `docs: amend constitution to vX.Y.Z (principle additions + governance update)`).
 
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.
+
 Formatting & Style Requirements:
 
 - Use Markdown headings exactly as in the template (do not demote/promote levels).

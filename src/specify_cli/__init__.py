@@ -7,6 +7,8 @@
 #     "platformdirs",
 #     "readchar",
 #     "httpx",
+#     "PyYAML",
+#     "truststore",
 # ]
 # ///
 """
@@ -284,6 +286,13 @@ AGENT_CONFIG = {
         "folder": ".cline/",
         "commands_subdir": "commands",
         "install_url": "https://github.com/cline/cline",
+        "requires_cli": True,
+    },
+    "hermes": {
+        "name": "Hermes",
+        "folder": ".hermes/",
+        "commands_subdir": "commands",
+        "install_url": "https://github.com/NousResearch/hermes-agent",
         "requires_cli": True,
     },
     "generic": {

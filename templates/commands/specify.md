@@ -178,7 +178,10 @@ Given that feature description, do this:
 
 **NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
 
-## General Guidelines
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.
+- **Baby Steps™**: Atomic changes only. Commit <=200 LOC per iteration.
 
 ## Quick Guidelines
 

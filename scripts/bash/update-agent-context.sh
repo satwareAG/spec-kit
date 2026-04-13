@@ -81,6 +81,7 @@ JUNIE_FILE="$REPO_ROOT/.junie/rules/specify-rules.md"
 VIBE_FILE="$REPO_ROOT/.vibe/agents/specify-agents.md"
 KIMI_FILE="$REPO_ROOT/KIMI.md"
 CLINE_FILE="$REPO_ROOT/.cline/rules/specify-rules.md"
+HERMES_FILE="$REPO_ROOT/.hermes.md"
 
 # Template file
 TEMPLATE_FILE="$REPO_ROOT/.specify/templates/agent-file-template.md"
@@ -534,6 +535,15 @@ update_agent_file() {
     local target_file="$1"
     local agent_name="$2"
     
+    # Global satware sync logic
+    local global_rules="$HOME/Documents/Cline"
+    local sync_header="## Global satware Policies"
+    local sync_content=""
+    
+    if [[ -d "$global_rules" ]]; then
+        sync_content="\n$sync_header\n\n- **Source**: \`~/Documents/Cline\`\n- **Status**: Synchronized with global satware AI ecosystem\n- **Protocols**: AEI, QCR, Baby Steps™, Half-Token\n"
+    fi
+
     if [[ -z "$target_file" ]] || [[ -z "$agent_name" ]]; then
         log_error "update_agent_file requires target_file and agent_name parameters"
         return 1
@@ -565,7 +575,11 @@ update_agent_file() {
         }
         
         if create_new_agent_file "$target_file" "$temp_file" "$project_name" "$current_date"; then
-            if mv "$temp_file" "$target_file"; then
+            # Append global sync content if available
+            if [[ -n "$sync_content" ]]; then
+                printf "$sync_content" >> "$temp_file"
+            fi
+            if mv "$temp_file" "$target_file" ; then
                 log_success "Created new $agent_name context file"
             else
                 log_error "Failed to move temporary file to $target_file"
@@ -590,6 +604,12 @@ update_agent_file() {
         fi
         
         if update_existing_agent_file "$target_file" "$current_date"; then
+            # Ensure global sync section exists or is updated
+            if [[ -n "$sync_content" ]]; then
+                if ! grep -q "$sync_header" "$target_file"; then
+                    printf "$sync_content" >> "$target_file"
+                fi
+            fi
             log_success "Updated existing $agent_name context file"
         else
             log_error "Failed to update existing agent file"
@@ -676,6 +696,9 @@ update_specific_agent() {
             ;;
         cline)
             update_agent_file "$CLINE_FILE" "Cline CLI"
+            ;;
+        hermes)
+            update_agent_file "$HERMES_FILE" "Hermes"
             ;;
         generic)
             log_info "Generic agent: no predefined context file. Use the agent-specific update script for your agent."
@@ -795,6 +818,11 @@ update_all_existing_agents() {
         update_agent_file "$JUNIE_FILE" "Junie"
         found_agent=true
     fi
+
+    if [[ -f "$HERMES_FILE" ]]; then
+        update_agent_file "$HERMES_FILE" "Hermes"
+        found_agent=true
+    fi
     
     # If no agent files exist, create a default Claude file
     if [[ "$found_agent" == false ]]; then
@@ -819,7 +847,7 @@ print_summary() {
     fi
     
     echo
-    log_info "Usage: $0 [claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|junie|generic]"
+    log_info "Usage: $0 [claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic]"
 }
 
 #==============================================================================

@@ -90,6 +90,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
 
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.
+- **Quantum-Consciousness Reasoning (QCR)**: Use appropriate streams (1-5) based on complexity (1-10).
+
 ## Key rules
 
 - Use absolute paths

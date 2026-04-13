@@ -7,6 +7,16 @@ Recent changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2026-04-13
+
+### Added
+
+- **satware AI Ecosystem Optimization**:
+  - Integrated support for the **Hermes Agent** (NousResearch) including trajectory-focused `.hermes.md` naming.
+  - Implemented **"Sync-not-Copy" logic** for global satware rules hosted in \`~/Documents/Cline\`.
+  - Refined AI prompt templates to enforce **Baby Steps™** (≤200 LOC atomic commits) and the **Half-Token** principle.
+  - Updated Agent identity templates with **Jane Alesi** and **Michael Wegener** personas.
+
 ## [0.2.4] - 2026-03-12
 
 ### Added

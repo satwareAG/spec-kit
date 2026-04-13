@@ -786,6 +786,12 @@ class CommandRegistrar:
             "args": "$ARGUMENTS",
             "extension": ".md"
         },
+        "hermes": {
+            "dir": ".hermes/commands",
+            "format": "markdown",
+            "args": "$ARGUMENTS",
+            "extension": ".md"
+        },
         "kimi": {
             "dir": ".kimi/skills",
             "format": "markdown",

@@ -148,6 +148,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Validation checkpoints**: Verify each phase completion before proceeding
 
 7. Implementation execution rules:
+   - **Baby Steps™**: Implement changes in atomic units. Commit <=200 LOC per step. Ensure single responsibility per function (<=50 LOC).
    - **Setup first**: Initialize project structure, dependencies, configuration
    - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
    - **Core development**: Implement models, services, CLI commands, endpoints
@@ -170,6 +171,11 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Report final status with summary of completed work
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.
+- **Baby Steps™**: Atomic changes only. Commit <=200 LOC per iteration.
 
 10. **Check for extension hooks**: After completion validation, check if `.specify/extensions.yml` exists in the project root.
     - If it exists, read it and look for entries under the `hooks.after_implement` key

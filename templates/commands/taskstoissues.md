@@ -31,3 +31,7 @@ git config --get remote.origin.url
 
 > [!CAUTION]
 > UNDER NO CIRCUMSTANCES EVER CREATE ISSUES IN REPOSITORIES THAT DO NOT MATCH THE REMOTE URL
+
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.

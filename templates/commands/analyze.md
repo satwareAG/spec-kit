@@ -165,6 +165,11 @@ At end of report, output a concise Next Actions block:
 
 Ask the user: "Would you like me to suggest concrete remediation edits for the top N issues?" (Do NOT apply them automatically.)
 
+## Global satware Guidelines
+
+- **Half-Token Principle**: Be concise and action-oriented. Skip intent narrative; act immediately. Use tables for comparisons.
+- **Baby Steps™**: Atomic changes only. Commit <=200 LOC per iteration.
+
 ## Operating Principles
 
 ### Context Efficiency

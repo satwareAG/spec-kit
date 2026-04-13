@@ -50,9 +50,18 @@ Specify supports multiple AI agents by generating agent-specific command files a
 | **Tabnine CLI**            | `.tabnine/agent/commands/` | TOML | `tabnine`       | Tabnine CLI                 |
 | **Kimi Code**              | `.kimi/skills/`        | Markdown | `kimi`          | Kimi Code CLI (Moonshot AI) |
 | **Cline CLI**             | `.cline/commands/`     | Markdown | `cline`         | Cline CLI                   |
+| **Hermes**                 | `.hermes/`             | Markdown | `hermes`        | Trajectory-focused agent    |
 | **IBM Bob**                | `.bob/commands/`       | Markdown | N/A (IDE-based) | IBM Bob IDE                 |
 | **Junie**                  | `.junie/commands/`     | Markdown | N/A (IDE-based) | Junie AI Agent              |
 | **Generic**                | User-specified via `--ai-commands-dir` | Markdown | N/A | Bring your own agent        |
+
+### Global Rule Synchronization
+
+Projects initialized with Specify CLI support "Sync-not-Copy" logic for global satware rules.
+
+- **Source**: `~/Documents/Cline`
+- **Mechanism**: The `update-agent-context.sh` script detects the existence of the global satware configuration directory and ensures project-local agent files reference the authoritative global policies (AEI, QCR, Baby Steps™, Half-Token).
+- **Benefit**: Local projects stay aligned with the latest satware AI standards without manual duplication.
 
 ### Step-by-Step Integration Guide
 
@@ -100,7 +109,7 @@ This eliminates the need for special-case mappings throughout the codebase.
 Update the `--ai` parameter help text in the `init()` command to include the new agent:
 
 ```python
-ai_assistant: str = typer.Option(None, "--ai", help="AI assistant to use: claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, codebuddy, new-agent-cli, or kiro-cli"),
+ai_assistant: str = typer.Option(None, "--ai", help="AI assistant to use: claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, codebuddy, hermes, or kiro-cli"),
 ```
 
 Also update any function docstrings, examples, and error messages that list available agents.
