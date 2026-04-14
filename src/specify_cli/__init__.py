@@ -304,6 +304,22 @@ AGENT_CONFIG = {
     },
 }
 
+# Integration Registry bridge - allows get_integration() for new code
+# while preserving AGENT_CONFIG dict for backward compatibility.
+# Individual integration modules at specify_cli/integrations/<agent>/ 
+# mirror these values and provide IntegrationBase subclasses.
+def get_integration_config(agent_key: str) -> dict:
+    """Get agent config from integration registry, fallback to AGENT_CONFIG."""
+    try:
+        from specify_cli.integrations import get_integration
+        integration = get_integration(agent_key)
+        if integration:
+            return integration.config
+    except (ImportError, KeyError):
+        pass
+    return AGENT_CONFIG.get(agent_key, {})
+
+
 AI_ASSISTANT_ALIASES = {
     "kiro": "kiro-cli",
 }
