@@ -7,6 +7,24 @@ Recent changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-04-14
+
+### Added
+
+- **P1 Addon: Taskfile/Makefile Generator** (`/speckit.orchestrate`):
+  - New command template `templates/commands/orchestrate.md` for generating CI/CD orchestration from `tasks.md`.
+  - Produces Taskfile.yml (preferred) or Makefile with standard targets: generate, validate, smoke-test, deploy.
+  - Includes dependency resolution, SDD integration targets, and platform-aware shell support.
+  - Spec at `specs/002-taskfile-generator/spec.md`.
+
+- **P1 Addon: Environment Schema Validator** (`/speckit.env-schema`):
+  - New command template `templates/commands/env-schema.md` for generating `.env.schema` from spec constraints.
+  - Extracts env vars from FR/TC references, defines types, defaults, secret patterns, `_ref` bindings.
+  - Generates safe `.env.example` for deployment validation (no real secrets).
+  - Spec at `specs/003-env-schema-validator/spec.md`.
+
+- Added `orchestrate` and `env-schema` entries to `SKILL_DESCRIPTIONS` in Specify CLI.
+
 ## [0.2.5] - 2026-04-13
 
 ### Added

@@ -34,6 +34,7 @@ function Get-CurrentBranch {
     # For non-git repos, try to find the latest feature directory
     $repoRoot = Get-RepoRoot
     $specsDir = Join-Path $repoRoot "specs"
+    if (-not (Test-Path $specsDir)) { $specsDir = Join-Path $repoRoot ".specify/specs" }
     
     if (Test-Path $specsDir) {
         $latestFeature = ""
@@ -96,20 +97,36 @@ function Get-FeaturePathsEnv {
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
+
+    # Determine specs directory (check specs/ then .specify/specs/)
+    $specsDir = Join-Path $repoRoot "specs"
+    if (-not (Test-Path $specsDir)) { $specsDir = Join-Path $repoRoot ".specify/specs" }
+
     $featureDir = Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
     
+    # Fallback if specific feature dir is missing but specs_dir exists
+    if ((-not (Test-Path $featureDir)) -and (Test-Path $specsDir)) {
+        $featureDir = $specsDir
+    }
+
+    $actualFeatureDir = $featureDir
+    # Verify if spec.md exists in feature_dir, if not, maybe it's in specs_dir root?
+    if ((-not (Test-Path (Join-Path $featureDir 'spec.md'))) -and (Test-Path (Join-Path $specsDir 'spec.md'))) {
+        $actualFeatureDir = $specsDir
+    }
+
     [PSCustomObject]@{
         REPO_ROOT     = $repoRoot
         CURRENT_BRANCH = $currentBranch
         HAS_GIT       = $hasGit
-        FEATURE_DIR   = $featureDir
-        FEATURE_SPEC  = Join-Path $featureDir 'spec.md'
-        IMPL_PLAN     = Join-Path $featureDir 'plan.md'
-        TASKS         = Join-Path $featureDir 'tasks.md'
-        RESEARCH      = Join-Path $featureDir 'research.md'
-        DATA_MODEL    = Join-Path $featureDir 'data-model.md'
-        QUICKSTART    = Join-Path $featureDir 'quickstart.md'
-        CONTRACTS_DIR = Join-Path $featureDir 'contracts'
+        FEATURE_DIR   = $actualFeatureDir
+        FEATURE_SPEC  = Join-Path $actualFeatureDir 'spec.md'
+        IMPL_PLAN     = Join-Path $actualFeatureDir 'plan.md'
+        TASKS         = Join-Path $actualFeatureDir 'tasks.md'
+        RESEARCH      = Join-Path $actualFeatureDir 'research.md'
+        DATA_MODEL    = Join-Path $actualFeatureDir 'data-model.md'
+        QUICKSTART    = Join-Path $actualFeatureDir 'quickstart.md'
+        CONTRACTS_DIR = Join-Path $actualFeatureDir 'contracts'
     }
 }
 

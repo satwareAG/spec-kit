@@ -1110,6 +1110,8 @@ SKILL_DESCRIPTIONS = {
     "constitution": "Create or update project governing principles and development guidelines. Use at project start to establish code quality, testing standards, and architectural constraints that guide all development.",
     "checklist": "Generate custom quality checklists for validating requirements completeness and clarity. Use to create unit tests for English that ensure spec quality before implementation.",
     "taskstoissues": "Convert tasks from tasks.md into GitHub issues. Use after task breakdown to track work items in GitHub project management.",
+    "orchestrate": "Generate Taskfile.yml or Makefile orchestration from tasks.md. Creates CI/CD-ready targets (generate, validate, smoke-test, deploy) mapped from spec task breakdowns with dependency resolution.",
+    "env-schema": "Generate .env.schema from spec constraints. Extracts environment variables from functional requirements, defines types, defaults, secret patterns, and produces safe .env.example for deployment validation.",
 }
 
 

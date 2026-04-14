@@ -29,6 +29,7 @@ get_current_branch() {
     # For non-git repos, try to find the latest feature directory
     local repo_root=$(get_repo_root)
     local specs_dir="$repo_root/specs"
+    [[ ! -d "$specs_dir" ]] && specs_dir="$repo_root/.specify/specs"
 
     if [[ -d "$specs_dir" ]]; then
         local latest_feature=""
@@ -133,21 +134,36 @@ get_feature_paths() {
         has_git_repo="true"
     fi
 
+    # Determine specs directory (check specs/ then .specify/specs/)
+    local specs_dir="$repo_root/specs"
+    [[ ! -d "$specs_dir" ]] && specs_dir="$repo_root/.specify/specs"
+
     # Use prefix-based lookup to support multiple branches per spec
     local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
+    
+    # Fallback if specific feature dir is missing but specs_dir exists
+    if [[ ! -d "$feature_dir" ]] && [[ -d "$specs_dir" ]]; then
+        feature_dir="$specs_dir"
+    fi
+
+    actual_feature_dir="$feature_dir"
+    # Verify if spec.md exists in feature_dir, if not, maybe it's in specs_dir root?
+    if [[ ! -f "$feature_dir/spec.md" ]] && [[ -f "$specs_dir/spec.md" ]]; then
+        actual_feature_dir="$specs_dir"
+    fi
 
     cat <<EOF
 REPO_ROOT='$repo_root'
 CURRENT_BRANCH='$current_branch'
 HAS_GIT='$has_git_repo'
-FEATURE_DIR='$feature_dir'
-FEATURE_SPEC='$feature_dir/spec.md'
-IMPL_PLAN='$feature_dir/plan.md'
-TASKS='$feature_dir/tasks.md'
-RESEARCH='$feature_dir/research.md'
-DATA_MODEL='$feature_dir/data-model.md'
-QUICKSTART='$feature_dir/quickstart.md'
-CONTRACTS_DIR='$feature_dir/contracts'
+FEATURE_DIR='$actual_feature_dir'
+FEATURE_SPEC='$actual_feature_dir/spec.md'
+IMPL_PLAN='$actual_feature_dir/plan.md'
+TASKS='$actual_feature_dir/tasks.md'
+RESEARCH='$actual_feature_dir/research.md'
+DATA_MODEL='$actual_feature_dir/data-model.md'
+QUICKSTART='$actual_feature_dir/quickstart.md'
+CONTRACTS_DIR='$actual_feature_dir/contracts'
 EOF
 }
 
