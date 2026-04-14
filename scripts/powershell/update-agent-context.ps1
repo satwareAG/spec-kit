@@ -25,7 +25,7 @@ Relies on common helper functions in common.ps1
 #>
 param(
     [Parameter(Position=0)]
-    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','q','agy','bob','vibe','kimi','cline','hermes','junie','generic')]
+    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','q','agy','bob','vibe','qodercli','kimi','cline','hermes','junie','generic')]
     [string]$AgentType
 )
 
@@ -66,7 +66,7 @@ $JUNIE_FILE    = Join-Path $REPO_ROOT '.junie/rules/specify-rules.md'
 $VIBE_FILE     = Join-Path $REPO_ROOT '.vibe/agents/specify-agents.md'
 $KIMI_FILE     = Join-Path $REPO_ROOT 'KIMI.md'
 $CLINE_FILE    = Join-Path $REPO_ROOT '.cline/rules/specify-rules.md'
-$HERMES_FILE   = Join-Path $REPO_ROOT '.hermes.md'
+$HERMES_FILE   = Join-Path $REPO_ROOT '.hermes/rules/specify-rules.md'
 
 $TEMPLATE_FILE = Join-Path $REPO_ROOT '.specify/templates/agent-file-template.md'
 
@@ -364,6 +364,17 @@ function Update-AgentFile {
         [string]$AgentName
     )
     if (-not $TargetFile -or -not $AgentName) { Write-Err 'Update-AgentFile requires TargetFile and AgentName'; return $false }
+
+    # Global satware sync logic
+    $globalRules = Join-Path $HOME 'Documents/Cline'
+    $syncHeader = "## Global satware Policies"
+    $syncContent = ""
+
+    if (Test-Path $globalRules -PathType Container) {
+        $newline = [Environment]::NewLine
+        $syncContent = "$newline$syncHeader$newline$newline- **Source**: `` `~/Documents/Cline```$newline- **Status**: Synchronized with global satware AI ecosystem$newline- **Protocols**: AEI, QCR, Baby Steps™, Half-Token$newline"
+    }
+
     Write-Info "Updating $AgentName context file: $TargetFile"
     $projectName = Split-Path $REPO_ROOT -Leaf
     $date = Get-Date
@@ -372,10 +383,26 @@ function Update-AgentFile {
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
 
     if (-not (Test-Path $TargetFile)) {
-        if (New-AgentFile -TargetFile $TargetFile -ProjectName $projectName -Date $date) { Write-Success "Created new $AgentName context file" } else { Write-Err 'Failed to create new agent file'; return $false }
+        if (New-AgentFile -TargetFile $TargetFile -ProjectName $projectName -Date $date) {
+            # Append global sync content if available
+            if ($syncContent) {
+                Add-Content -LiteralPath $TargetFile -Value $syncContent -NoNewline -Encoding utf8
+            }
+            Write-Success "Created new $AgentName context file"
+        } else {
+            Write-Err 'Failed to create new agent file'; return $false
+        }
     } else {
         try {
-            if (Update-ExistingAgentFile -TargetFile $TargetFile -Date $date) { Write-Success "Updated existing $AgentName context file" } else { Write-Err 'Failed to update agent file'; return $false }
+            if (Update-ExistingAgentFile -TargetFile $TargetFile -Date $date) {
+                # Ensure global sync section exists or is updated
+                if ($syncContent -and -not (Select-String -Pattern ([Regex]::Escape($syncHeader)) -Path $TargetFile -Quiet)) {
+                    Add-Content -LiteralPath $TargetFile -Value $syncContent -NoNewline -Encoding utf8
+                }
+                Write-Success "Updated existing $AgentName context file"
+            } else {
+                Write-Err 'Failed to update agent file'; return $false
+            }
         } catch {
             Write-Err "Cannot access or update existing file: $TargetFile. $_"
             return $false

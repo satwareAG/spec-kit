@@ -81,7 +81,7 @@ JUNIE_FILE="$REPO_ROOT/.junie/rules/specify-rules.md"
 VIBE_FILE="$REPO_ROOT/.vibe/agents/specify-agents.md"
 KIMI_FILE="$REPO_ROOT/KIMI.md"
 CLINE_FILE="$REPO_ROOT/.cline/rules/specify-rules.md"
-HERMES_FILE="$REPO_ROOT/.hermes.md"
+HERMES_FILE="$REPO_ROOT/.hermes/rules/specify-rules.md"
 
 # Template file
 TEMPLATE_FILE="$REPO_ROOT/.specify/templates/agent-file-template.md"
