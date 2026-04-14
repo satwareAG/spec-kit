@@ -705,7 +705,7 @@ update_specific_agent() {
             ;;
         *)
             log_error "Unknown agent type '$agent_type'"
-            log_error "Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|junie|generic"
+            log_error "Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic"
             exit 1
             ;;
     esac
@@ -847,7 +847,7 @@ print_summary() {
     fi
     
     echo
-    log_info "Usage: $0 [claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic]"
+    log_info "Usage: $0 [claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic]"
 }
 
 #==============================================================================

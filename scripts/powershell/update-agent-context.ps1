@@ -25,7 +25,7 @@ Relies on common helper functions in common.ps1
 #>
 param(
     [Parameter(Position=0)]
-    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','q','agy','bob','vibe','qodercli','kimi','cline','hermes','junie','generic')]
+    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','agy','bob','vibe','qodercli','kimi','cline','hermes','junie','generic')]
     [string]$AgentType
 )
 
@@ -442,7 +442,7 @@ function Update-SpecificAgent {
         'cline'    { Update-AgentFile -TargetFile $CLINE_FILE    -AgentName 'Cline CLI' }
         'hermes'   { Update-AgentFile -TargetFile $HERMES_FILE   -AgentName 'Hermes' }
         'generic'  { Write-Info 'Generic agent: no predefined context file. Use the agent-specific update script for your agent.' }
-        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic'; return $false }
+        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic'; return $false }
     }
 }
 
@@ -485,7 +485,7 @@ function Print-Summary {
     if ($NEW_FRAMEWORK) { Write-Host "  - Added framework: $NEW_FRAMEWORK" }
     if ($NEW_DB -and $NEW_DB -ne 'N/A') { Write-Host "  - Added database: $NEW_DB" }
     Write-Host ''
-    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|q|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic]'
+    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|cline|hermes|junie|generic]'
 }
 
 function Main {
