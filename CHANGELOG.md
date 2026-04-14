@@ -7,6 +7,26 @@ Recent changes to the Specify CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-14
+
+### Added
+
+- **Integration Registry System**: New `src/specify_cli/integrations/` package with plugin-based agent registration.
+  - `base.py`: `IntegrationBase`, `MarkdownIntegration`, `TomlIntegration`, `SkillsIntegration`, `WorkflowsIntegration` base classes.
+  - `manifest.py`: `IntegrationManifest` dataclass for structured agent metadata.
+  - `__init__.py`: `INTEGRATION_REGISTRY` with `get_integration()`, `_register()`, `_register_builtins()` functions.
+  - 26 integration modules (one per agent) with `registrar_config` and `context_file` declarations.
+  - Agents: claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, roo, codebuddy, qodercli, kiro-cli, amp, shai, tabnine, kimi, bob, junie, cline, hermes, agy, forge, goose, iflow, pi, trae, vibe.
+
+- **CommandRegistrar** (`agents.py`): Registry-driven command generation replacing hardcoded AGENT_CONFIG logic.
+
+- **Presets System** (`presets.py`): Predefined configuration bundles for common project setups.
+
+### Changed
+
+- `AGENT_CONFIG` now reads from `INTEGRATION_REGISTRY` (single source of truth).
+- All existing satware customizations preserved (download_template_from_github, cline/hermes configs, addon templates).
+
 ## [0.2.6] - 2026-04-14
 
 ### Added
