@@ -1,0 +1,2 @@
+# Whitelist patterns for check-privacy-leaks.sh
+scripts/bash/check-privacy-leaks.sh
