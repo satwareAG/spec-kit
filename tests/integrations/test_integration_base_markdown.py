@@ -231,7 +231,8 @@ class MarkdownIntegrationTests:
         files.append(f".specify/integrations/speckit.manifest.json")
 
         if script_variant == "sh":
-            for name in ["check-prerequisites.sh", "common.sh", "create-new-feature.sh",
+            for name in ["check-prerequisites.sh", "check-upstream-sync.sh",
+                         "common.sh", "create-new-feature.sh",
                          "setup-plan.sh", "update-agent-context.sh"]:
                 files.append(f".specify/scripts/bash/{name}")
         else:
