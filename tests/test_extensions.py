@@ -1754,7 +1754,7 @@ Then {AGENT_SCRIPT}
         registrar = CommandRegistrar()
         from specify_cli.extensions import ExtensionManifest
         manifest = ExtensionManifest(ext_dir / "extension.yml")
-        registered = registrar.register_commands_for_agent("codex", manifest, ext_dir, project_dir)
+        registrar.register_commands_for_agent("codex", manifest, ext_dir, project_dir)
 
         skill_subdir = skills_dir / "speckit-cleanup-ext-run"
         assert skill_subdir.exists(), "Skill subdirectory should exist after registration"

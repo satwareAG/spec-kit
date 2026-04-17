@@ -18,9 +18,7 @@ import yaml
 from pathlib import Path
 
 from specify_cli.extensions import (
-    ExtensionManifest,
     ExtensionManager,
-    ExtensionError,
 )
 
 
@@ -220,7 +218,7 @@ class TestExtensionSkillRegistration:
         """Skills should be created when ai_skills is enabled."""
         project_dir, skills_dir = skills_project
         manager = ExtensionManager(project_dir)
-        manifest = manager.install_from_directory(
+        manager.install_from_directory(
             extension_dir, "0.1.0", register_commands=False
         )
 
@@ -593,7 +591,7 @@ class TestExtensionSkillEdgeCases:
         )
 
         manager = ExtensionManager(project_dir)
-        manifest = manager.install_from_directory(
+        manager.install_from_directory(
             ext_dir, "0.1.0", register_commands=False
         )
 
@@ -612,7 +610,7 @@ class TestExtensionSkillEdgeCases:
         ext_dir = _create_extension_dir(temp_dir, ext_id="test-ext")
 
         manager = ExtensionManager(project_dir)
-        manifest = manager.install_from_directory(
+        manager.install_from_directory(
             ext_dir, "0.1.0", register_commands=False
         )
 
@@ -628,10 +626,10 @@ class TestExtensionSkillEdgeCases:
         ext_dir_b = _create_extension_dir(temp_dir, ext_id="ext-b")
 
         manager = ExtensionManager(project_dir)
-        manifest_a = manager.install_from_directory(
+        manager.install_from_directory(
             ext_dir_a, "0.1.0", register_commands=False
         )
-        manifest_b = manager.install_from_directory(
+        manager.install_from_directory(
             ext_dir_b, "0.1.0", register_commands=False
         )
 
@@ -689,7 +687,7 @@ class TestExtensionSkillEdgeCases:
 
         manager = ExtensionManager(project_dir)
         # Should not raise
-        manifest = manager.install_from_directory(
+        manager.install_from_directory(
             ext_dir, "0.1.0", register_commands=False
         )
 
