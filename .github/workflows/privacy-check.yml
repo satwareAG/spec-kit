@@ -1,0 +1,19 @@
+name: Privacy Leak Detection
+
+on:
+  push:
+    branches: [ main-speck ]
+  pull_request:
+    branches: [ main-speck ]
+
+jobs:
+  privacy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run privacy check
+        run: ./scripts/bash/check-privacy-leaks.sh .
