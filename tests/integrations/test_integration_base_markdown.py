@@ -137,7 +137,7 @@ class MarkdownIntegrationTests:
     def test_setup_installs_update_context_scripts(self, tmp_path):
         i = get_integration(self.KEY)
         m = IntegrationManifest(self.KEY, tmp_path)
-        created = i.setup(tmp_path, m)
+        i.setup(tmp_path, m)
         scripts_dir = tmp_path / ".specify" / "integrations" / self.KEY / "scripts"
         assert scripts_dir.is_dir(), f"Scripts directory not created for {self.KEY}"
         assert (scripts_dir / "update-context.sh").exists()
@@ -225,14 +225,14 @@ class MarkdownIntegrationTests:
         files.append(f".specify/integrations/{self.KEY}/scripts/update-context.sh")
 
         # Framework files
-        files.append(f".specify/integration.json")
-        files.append(f".specify/init-options.json")
+        files.append(".specify/integration.json")
+        files.append(".specify/init-options.json")
         files.append(f".specify/integrations/{self.KEY}.manifest.json")
-        files.append(f".specify/integrations/speckit.manifest.json")
+        files.append(".specify/integrations/speckit.manifest.json")
 
         if script_variant == "sh":
-            for name in ["check-prerequisites.sh", "check-upstream-sync.sh",
-                         "common.sh", "create-new-feature.sh",
+            for name in ["check-privacy-leaks.sh", "check-prerequisites.sh",
+                         "check-upstream-sync.sh", "common.sh", "create-new-feature.sh",
                          "setup-plan.sh", "update-agent-context.sh"]:
                 files.append(f".specify/scripts/bash/{name}")
         else:
