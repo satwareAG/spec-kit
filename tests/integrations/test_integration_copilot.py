@@ -192,7 +192,7 @@ class TestCopilotIntegration:
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
             ".specify/scripts/bash/setup-plan.sh",
-            ".spec
+            ".specify/scripts/bash/update-agent-context.sh",
             ".specify/templates/agent-file-template.md",
             ".specify/templates/checklist-template.md",
             ".specify/templates/constitution-template.md",
