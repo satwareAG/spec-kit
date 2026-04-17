@@ -1,0 +1,20 @@
+{
+  "name": "spec-kit",
+  "version": "0.7.2",
+  "sdd_source": "https://github.com/satwareAG/spec-kit",
+  "upstream": {
+    "github/spec-kit": {
+      "url": "https://github.com/github/spec-kit",
+      "paths": {
+        "specs": "specs/",
+        "tests": "tests/",
+        "code": "src/"
+      },
+      "channel": "gh:issues"
+    }
+  },
+  "custom_integrations": [
+    "cline",
+    "hermes"
+  ]
+}
