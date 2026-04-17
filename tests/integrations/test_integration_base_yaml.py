@@ -357,6 +357,7 @@ class YamlIntegrationTests:
         if script_variant == "sh":
             for name in [
                 "check-prerequisites.sh",
+                "check-upstream-sync.sh",
                 "common.sh",
                 "create-new-feature.sh",
                 "setup-plan.sh",

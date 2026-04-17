@@ -188,10 +188,11 @@ class TestCopilotIntegration:
             ".specify/integrations/copilot/scripts/update-context.ps1",
             ".specify/integrations/copilot/scripts/update-context.sh",
             ".specify/scripts/bash/check-prerequisites.sh",
+            ".specify/scripts/bash/check-upstream-sync.sh",
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
             ".specify/scripts/bash/setup-plan.sh",
-            ".specify/scripts/bash/update-agent-context.sh",
+            ".spec
             ".specify/templates/agent-file-template.md",
             ".specify/templates/checklist-template.md",
             ".specify/templates/constitution-template.md",
