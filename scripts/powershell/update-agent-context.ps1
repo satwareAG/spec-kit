@@ -9,7 +9,7 @@ Mirrors the behavior of scripts/bash/update-agent-context.sh:
  2. Plan Data Extraction
  3. Agent File Management (create from template or update existing)
  4. Content Generation (technology stack, recent changes, timestamp)
- 5. Multi-Agent Support (claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, junie, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, trae, pi, iflow, forge, goose, generic)
+ 5. Multi-Agent Support (claude, cline, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, junie, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, trae, pi, iflow, forge, goose, hermes, generic)
 
 .PARAMETER AgentType
 Optional agent key to update a single agent. If omitted, updates all existing agent files (creating a default Claude file if none exist).
@@ -25,7 +25,7 @@ Relies on common helper functions in common.ps1
 #>
 param(
     [Parameter(Position=0)]
-    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','junie','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','agy','bob','vibe','qodercli','kimi','trae','pi','iflow','forge','goose','generic')]
+    [ValidateSet('claude','cline','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','junie','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','agy','bob','vibe','qodercli','kimi','trae','pi','iflow','forge','goose','hermes','generic')]
     [string]$AgentType
 )
 
@@ -69,6 +69,7 @@ $TRAE_FILE     = Join-Path $REPO_ROOT '.trae/rules/project_rules.md'
 $IFLOW_FILE    = Join-Path $REPO_ROOT 'IFLOW.md'
 $FORGE_FILE    = Join-Path $REPO_ROOT 'AGENTS.md'
 $GOOSE_FILE    = Join-Path $REPO_ROOT 'AGENTS.md'
+$HERMES_FILE   = Join-Path $REPO_ROOT 'SOUL.md'
 
 $TEMPLATE_FILE = Join-Path $REPO_ROOT '.specify/templates/agent-file-template.md'
 
@@ -393,6 +394,7 @@ function Update-SpecificAgent {
     )
     switch ($Type) {
         'claude'   { Update-AgentFile -TargetFile $CLAUDE_FILE   -AgentName 'Claude Code' }
+        'cline'    { Update-AgentFile -TargetFile "$RepoRoot\.cline\rules" -AgentName 'Cline CLI' }
         'gemini'   { Update-AgentFile -TargetFile $GEMINI_FILE   -AgentName 'Gemini CLI' }
         'copilot'  { Update-AgentFile -TargetFile $COPILOT_FILE  -AgentName 'GitHub Copilot' }
         'cursor-agent' { Update-AgentFile -TargetFile $CURSOR_FILE   -AgentName 'Cursor IDE' }
@@ -419,8 +421,9 @@ function Update-SpecificAgent {
         'iflow'    { Update-AgentFile -TargetFile $IFLOW_FILE    -AgentName 'iFlow CLI' }
         'forge'    { Update-AgentFile -TargetFile $FORGE_FILE    -AgentName 'Forge' }
         'goose'    { Update-AgentFile -TargetFile $GOOSE_FILE    -AgentName 'Goose' }
+        'hermes'   { Update-AgentFile -TargetFile $HERMES_FILE   -AgentName 'Hermes' }
         'generic'  { Write-Info 'Generic agent: no predefined context file. Use the agent-specific update script for your agent.' }
-        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|generic'; return $false }
+        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|cline|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|hermes|generic'; return $false }
     }
 }
 
@@ -492,7 +495,7 @@ function Print-Summary {
     if ($NEW_FRAMEWORK) { Write-Host "  - Added framework: $NEW_FRAMEWORK" }
     if ($NEW_DB -and $NEW_DB -ne 'N/A') { Write-Host "  - Added database: $NEW_DB" }
     Write-Host ''
-    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|generic]'
+    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|cline|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|hermes|generic]'
 }
 
 function Main {

@@ -35,7 +35,7 @@
 #    - Creates default Claude file if no agent files exist
 #
 # Usage: ./update-agent-context.sh [agent_type]
-# Agent types: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|generic
+# Agent types: claude|cline|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|hermes|generic
 # Leave empty to update all existing agent files
 
 set -e
@@ -62,6 +62,7 @@ AGENT_TYPE="${1:-}"
 
 # Agent-specific file paths  
 CLAUDE_FILE="$REPO_ROOT/CLAUDE.md"
+CLINE_FILE="$REPO_ROOT/.cline/rules"
 GEMINI_FILE="$REPO_ROOT/GEMINI.md"
 COPILOT_FILE="$REPO_ROOT/.github/copilot-instructions.md"
 CURSOR_FILE="$REPO_ROOT/.cursor/rules/specify-rules.mdc"
@@ -73,6 +74,7 @@ KILOCODE_FILE="$REPO_ROOT/.kilocode/rules/specify-rules.md"
 AUGGIE_FILE="$REPO_ROOT/.augment/rules/specify-rules.md"
 ROO_FILE="$REPO_ROOT/.roo/rules/specify-rules.md"
 CODEBUDDY_FILE="$REPO_ROOT/CODEBUDDY.md"
+HERMES_FILE="$REPO_ROOT/SOUL.md"
 QODER_FILE="$REPO_ROOT/QODER.md"
 # Amp, Kiro CLI, IBM Bob, Pi, Forge, and Goose all share AGENTS.md — use AGENTS_FILE to avoid
 # updating the same file multiple times.
@@ -635,6 +637,9 @@ update_specific_agent() {
         claude)
             update_agent_file "$CLAUDE_FILE" "Claude Code" || return 1
             ;;
+        cline)
+            update_agent_file "$CLINE_FILE" "Cline CLI" || return 1
+            ;;
         gemini)
             update_agent_file "$GEMINI_FILE" "Gemini CLI" || return 1
             ;;
@@ -669,7 +674,10 @@ update_specific_agent() {
             update_agent_file "$ROO_FILE" "Roo Code" || return 1
             ;;
         codebuddy)
-            update_agent_file "$CODEBUDDY_FILE" "CodeBuddy CLI" || return 1
+            update_agent_file "$CODEBUDDY_FILE" "CodeBuddy" || return 1
+            ;;
+        hermes)
+            update_agent_file "$HERMES_FILE" "Hermes" || return 1
             ;;
         qodercli)
             update_agent_file "$QODER_FILE" "Qoder CLI" || return 1
@@ -718,7 +726,7 @@ update_specific_agent() {
             ;;
         *)
             log_error "Unknown agent type '$agent_type'"
-            log_error "Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|generic"
+            log_error "Expected: claude|cline|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|hermes|generic"
             exit 1
             ;;
     esac
@@ -803,7 +811,7 @@ print_summary() {
     fi
     
     echo
-    log_info "Usage: $0 [claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|generic]"
+    log_info "Usage: $0 [claude|cline|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|junie|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|forge|goose|hermes|generic]"
 }
 
 #==============================================================================
