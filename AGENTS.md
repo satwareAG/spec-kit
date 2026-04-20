@@ -475,6 +475,8 @@ In CI, `.github/workflows/upstream-sync-check.yml` runs `scripts/bash/check-upst
 
 See `docs/ipadp-l3-automation.md` for full details on the scheduled workflow, the SoD/EoD integration, local run instructions, and failure/override modes.
 
+See `docs/fork-agent-parity.md` for the fork-agent parity audit (IPADP Phase 4.3): required class attributes, inheritance chain, delta vs upstream-bundled integrations, and the regression contract enforced by `tests/integrations/test_fork_agent_parity.py`.
+
 ### SDD/TDD Workflow (short form)
 
 1. **Spec first** — create or update a spec under `specs/<feature>/spec.md` using `templates/spec-template.md`.
