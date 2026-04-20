@@ -18,6 +18,7 @@ This fork adds the `cline` and `hermes` agent integrations on top of upstream
 - Development guide: /DEVELOPMENT.md
 - Changelog: /CHANGELOG.md
 - IPADP metadata: /specs/metadata.json
+- IPADP L3 automation: /docs/ipadp-l3-automation.md
 
 ## Templates
 

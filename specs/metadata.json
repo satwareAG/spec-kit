@@ -52,7 +52,12 @@
   "morning_protocol": {
     "source": "~/Documents/Cline/Workflows/sod.protocol.md",
     "eod_source": "~/Documents/Cline/Workflows/eod.protocol.md",
-    "upstream_sync_check": "scripts/bash/check-upstream-sync.sh"
+    "upstream_sync_check": "scripts/bash/check-upstream-sync.sh",
+    "sod_hook": "scripts/bash/sod.sh",
+    "eod_hook": "scripts/bash/eod.sh",
+    "dispatcher": "scripts/daily-routine.sh",
+    "ci_workflow": ".github/workflows/upstream-sync-check.yml",
+    "docs": "docs/ipadp-l3-automation.md"
   },
   "cline_harmony": {
     "rules_source": "~/Documents/Cline/Rules/",

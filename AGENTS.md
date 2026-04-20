@@ -445,7 +445,7 @@ internal satware AG `wiki` repository (`specs/rfc-interproject-agentic-developme
 |-------|-------------|-----------------------|
 | L1    | `AGENTS.md` + `specs/metadata.json` with upstream/downstream graph | This file + `specs/metadata.json` |
 | L2    | Privacy validation in CI                                          | `scripts/bash/check-privacy-leaks.sh`, `.privacy-whitelist`, `.github/workflows/privacy-check.yml` |
-| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, Cline `sod.protocol.md` / `eod.protocol.md` |
+| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, `.github/workflows/upstream-sync-check.yml`, `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/daily-routine.sh`, Cline `sod.protocol.md` / `eod.protocol.md` |
 
 ### Harmony with `~/Documents/Cline`
 
@@ -468,10 +468,12 @@ Key rules that govern SDD/TDD and day-to-day behavior on spec-kit:
 
 At the start of every working session an agent working on this repository SHOULD:
 
-1. Run the Cline **Start-of-Day** protocol: `~/Documents/Cline/Workflows/sod.protocol.md`
-2. Execute `scripts/bash/check-upstream-sync.sh` to detect new upstream `github/spec-kit` release tags.
-3. Run `scripts/bash/check-privacy-leaks.sh` before any push to verify privacy boundaries.
-4. At the end of the session, run the Cline **End-of-Day** protocol: `~/Documents/Cline/Workflows/eod.protocol.md`
+1. Run the repo-local SoD hook: `bash scripts/daily-routine.sh sod` (delegates to Cline `~/Documents/Cline/Workflows/sod.protocol.md`, then runs `check-privacy-leaks.sh` and `check-upstream-sync.sh`).
+2. At the end of the session, run the repo-local EoD hook: `bash scripts/daily-routine.sh eod` (delegates to Cline `~/Documents/Cline/Workflows/eod.protocol.md`, then runs `check-privacy-leaks.sh`).
+
+In CI, `.github/workflows/upstream-sync-check.yml` runs `scripts/bash/check-upstream-sync.sh` on a daily schedule and opens/updates a rolling `upstream-sync: <tag> available` issue when a new upstream `github/spec-kit` release tag is detected.
+
+See `docs/ipadp-l3-automation.md` for full details on the scheduled workflow, the SoD/EoD integration, local run instructions, and failure/override modes.
 
 ### SDD/TDD Workflow (short form)
 
