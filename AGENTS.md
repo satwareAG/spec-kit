@@ -430,4 +430,60 @@ Implementation: Extends `YamlIntegration` (parallel to `TomlIntegration`):
 
 ---
 
+## IPADP Conformance & Cline Harmony
+
+This fork of `spec-kit` participates in the **Inter-Project Agentic Development
+Process (IPADP)** as project #6. It targets **L3 conformance** — the highest
+level defined in the IPADP RFC.
+
+See: `specs/metadata.json`, `llms.txt`, and the IPADP RFC hosted in the
+internal satware AG `wiki` repository (`specs/rfc-interproject-agentic-development.md`).
+
+### Conformance Matrix
+
+| Level | Requirement | Artifact in this repo |
+|-------|-------------|-----------------------|
+| L1    | `AGENTS.md` + `specs/metadata.json` with upstream/downstream graph | This file + `specs/metadata.json` |
+| L2    | Privacy validation in CI                                          | `scripts/bash/check-privacy-leaks.sh`, `.privacy-whitelist`, `.github/workflows/privacy-check.yml` |
+| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, Cline `sod.protocol.md` / `eod.protocol.md` |
+
+### Harmony with `~/Documents/Cline`
+
+Agents working on this repository MUST follow the global satware AG agent rules
+distributed via the Cline command center. The canonical source of truth is
+`~/Documents/Cline/Rules/`, synchronized into consumer projects via
+`~/Documents/Cline/scripts/env-setup-symlinks.sh`.
+
+Key rules that govern SDD/TDD and day-to-day behavior on spec-kit:
+
+- `methodology.core.md` — core SDD/TDD/RLM methodology
+- `methodology.rlm.md`  — Reasoning, Learning, Memory loop
+- `code.quality.md`     — code quality bar, reviews, refactoring
+- `git.standards.md`    — commit conventions, branch model, PR hygiene
+- `context.management.md` — git-native context and zero-persistence memory
+- `docs.markdown.md`    — markdown + frontmatter rules
+- `agent.framework.md`, `agent.guardrails.md` — operational framework and guardrails
+
+### Morning / EoD Protocol Integration
+
+At the start of every working session an agent working on this repository SHOULD:
+
+1. Run the Cline **Start-of-Day** protocol: `~/Documents/Cline/Workflows/sod.protocol.md`
+2. Execute `scripts/bash/check-upstream-sync.sh` to detect new upstream `github/spec-kit` release tags.
+3. Run `scripts/bash/check-privacy-leaks.sh` before any push to verify privacy boundaries.
+4. At the end of the session, run the Cline **End-of-Day** protocol: `~/Documents/Cline/Workflows/eod.protocol.md`
+
+### SDD/TDD Workflow (short form)
+
+1. **Spec first** — create or update a spec under `specs/<feature>/spec.md` using `templates/spec-template.md`.
+2. **Plan** — derive `specs/<feature>/plan.md` from `templates/plan-template.md`.
+3. **Tasks** — break down into verifiable tasks (`templates/tasks-template.md`).
+4. **Test-first** — add failing tests under `tests/` before implementation.
+5. **Implement** — make the tests pass with the minimum change set.
+6. **Checklists** — fulfill `templates/checklist-template.md` prior to merge.
+7. **Privacy + upstream sync** — verify via the two scripts above.
+8. **Commit + PR** — follow `git.standards.md` (conventional commits, signed trailers where required).
+
+---
+
 *This documentation should be updated whenever new integrations are added to maintain accuracy and completeness.*

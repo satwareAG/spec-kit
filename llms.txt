@@ -1,0 +1,42 @@
+# spec-kit (satwareAG fork)
+
+Comprehensive toolkit for Spec-Driven Development (SDD) and Test-Driven Development (TDD).
+This fork adds the `cline` and `hermes` agent integrations on top of upstream
+`github/spec-kit`. It is IPADP project #6 in the satware AG ecosystem.
+
+## Status
+
+- Fork version: satware-v0.7.3+1
+- Upstream version: 0.7.3
+- IPADP conformance level: L3 (AGENTS.md + specs/metadata.json + privacy validation + morning protocol)
+
+## Docs
+
+- SDD methodology: /spec-driven.md
+- Agent integration guide: /AGENTS.md
+- Contribution guide: /CONTRIBUTING.md
+- Development guide: /DEVELOPMENT.md
+- Changelog: /CHANGELOG.md
+- IPADP metadata: /specs/metadata.json
+
+## Templates
+
+- Spec template: /templates/spec-template.md
+- Plan template: /templates/plan-template.md
+- Tasks template: /templates/tasks-template.md
+- Checklist template: /templates/checklist-template.md
+- Constitution template: /templates/constitution-template.md
+
+## Repos
+
+- Source (fork): https://github.com/satwareAG/spec-kit
+- Upstream: https://github.com/github/spec-kit
+- Issues: https://github.com/satwareAG/spec-kit/issues
+- Coordination hub (IPADP RFC): internal satware AG `wiki` repository
+
+## IPADP
+
+- RFC: `specs/rfc-interproject-agentic-development.md` in the internal satware AG `wiki` repository
+- Morning protocol (SoD): `~/Documents/Cline/Workflows/sod.protocol.md`
+- EoD protocol: `~/Documents/Cline/Workflows/eod.protocol.md`
+- Global agent rules: `~/Documents/Cline/Rules/`

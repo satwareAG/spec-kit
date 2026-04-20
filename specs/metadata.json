@@ -1,20 +1,71 @@
 {
   "name": "spec-kit",
-  "version": "0.7.2",
+  "version": "0.7.3",
+  "fork_version": "satware-v0.7.3+1",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
+  "forge": "github",
+  "visibility": "public",
+  "ipadp": {
+    "project_number": 6,
+    "conformance_level": "L3",
+    "issue_tracker": "https://github.com/satwareAG/spec-kit/issues/6",
+    "rfc_location": "<internal>/wiki/specs/rfc-interproject-agentic-development.md"
+  },
   "upstream": {
     "github/spec-kit": {
       "url": "https://github.com/github/spec-kit",
+      "forge": "github",
+      "channel": "gh:issues",
       "paths": {
         "specs": "specs/",
         "tests": "tests/",
         "code": "src/"
-      },
-      "channel": "gh:issues"
+      }
+    }
+  },
+  "downstream": {
+    "cline-rules": {
+      "forge": "gitlab",
+      "visibility": "private",
+      "role": "consumes SDD methodology + templates"
+    },
+    "wiki": {
+      "forge": "gitea",
+      "visibility": "private",
+      "role": "coordination hub; hosts IPADP RFC"
+    },
+    "amicron-platform": {
+      "forge": "gitlab",
+      "visibility": "private",
+      "role": "transitive consumer via cline-rules"
     }
   },
   "custom_integrations": [
     "cline",
     "hermes"
-  ]
+  ],
+  "privacy": {
+    "validator": "scripts/bash/check-privacy-leaks.sh",
+    "whitelist": ".privacy-whitelist",
+    "ci_workflow": ".github/workflows/privacy-check.yml"
+  },
+  "morning_protocol": {
+    "source": "~/Documents/Cline/Workflows/sod.protocol.md",
+    "eod_source": "~/Documents/Cline/Workflows/eod.protocol.md",
+    "upstream_sync_check": "scripts/bash/check-upstream-sync.sh"
+  },
+  "cline_harmony": {
+    "rules_source": "~/Documents/Cline/Rules/",
+    "key_rules": [
+      "methodology.core.md",
+      "methodology.rlm.md",
+      "code.quality.md",
+      "git.standards.md",
+      "context.management.md",
+      "docs.markdown.md",
+      "agent.framework.md",
+      "agent.guardrails.md"
+    ],
+    "symlink_script": "~/Documents/Cline/scripts/env-setup-symlinks.sh"
+  }
 }
