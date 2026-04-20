@@ -395,7 +395,9 @@ class YamlIntegrationTests:
                 "check-upstream-sync.sh",
                 "common.sh",
                 "create-new-feature.sh",
+                "eod.sh",
                 "setup-plan.sh",
+                "sod.sh",
             ]:
                 files.append(f".specify/scripts/bash/{name}")
         else:
