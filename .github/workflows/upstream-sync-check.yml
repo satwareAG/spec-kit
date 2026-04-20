@@ -1,0 +1,92 @@
+name: Upstream Sync Check
+
+# IPADP Phase 3.1 — Scheduled upstream-sync detection for the satwareAG/spec-kit fork.
+# Wraps scripts/bash/check-upstream-sync.sh. If the current HEAD of main-speck is
+# missing a newer upstream (github/spec-kit) release tag, opens or updates a single
+# rolling tracking issue titled `upstream-sync: <latest-tag> available`.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # daily at 06:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  upstream-sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main-speck
+        uses: actions/checkout@v4
+        with:
+          ref: main-speck
+          fetch-depth: 0
+
+      - name: Configure upstream remote
+        run: |
+          git remote add upstream https://github.com/github/spec-kit.git || \
+            git remote set-url upstream https://github.com/github/spec-kit.git
+          git fetch upstream --tags --quiet
+
+      - name: Run check-upstream-sync.sh (JSON)
+        id: check
+        run: |
+          output=$(./scripts/bash/check-upstream-sync.sh --json)
+          echo "result=$output" >> "$GITHUB_OUTPUT"
+          echo "$output"
+          synced=$(echo "$output" | python3 -c "import json,sys;print(json.load(sys.stdin).get('synced',True))")
+          latest=$(echo "$output" | python3 -c "import json,sys;print(json.load(sys.stdin).get('latest_tag',''))")
+          echo "synced=$synced" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update rolling tracking issue
+        if: steps.check.outputs.synced == 'False'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST: ${{ steps.check.outputs.latest }}
+          RESULT: ${{ steps.check.outputs.result }}
+        run: |
+          set -euo pipefail
+          title="upstream-sync: ${LATEST} available"
+          body=$(printf '%s\n' \
+            "A new upstream release has been detected on \`github/spec-kit\`." \
+            "" \
+            "- **Latest upstream tag:** \`${LATEST}\`" \
+            "- **Fork branch:** \`main-speck\`" \
+            "- **Raw check output:**" \
+            "" \
+            '```json' \
+            "${RESULT}" \
+            '```' \
+            "" \
+            "### Action" \
+            "1. Create a sync branch: \`git checkout -b sync/upstream-${LATEST} main-speck\`" \
+            "2. Merge: \`git merge ${LATEST}\`" \
+            "3. Resolve conflicts, preserve fork agents (agy, bob, iflow, kimi, hermes, cline)." \
+            "4. Run \`uv run pytest tests/integrations/ -x -q\`." \
+            "5. Open PR to \`main-speck\`; tag \`satware-${LATEST}+1\` after merge." \
+            "" \
+            "_This issue is maintained automatically by \`.github/workflows/upstream-sync-check.yml\`._")
+
+          # Find an existing open issue for this exact title (idempotent).
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" \
+            --state open --label upstream-sync --search "$title in:title" \
+            --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+
+          if [ -n "$existing" ]; then
+            echo "Updating existing issue #$existing"
+            gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            echo "Creating new tracking issue"
+            gh label create upstream-sync --repo "$GITHUB_REPOSITORY" \
+              --color FBCA04 --description "Tracks pending upstream spec-kit sync" 2>/dev/null || true
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$title" --body "$body" \
+              --label upstream-sync --label enhancement
+          fi
+
+      - name: Report in-sync
+        if: steps.check.outputs.synced != 'False'
+        run: echo "✅ main-speck is up to date with upstream (${{ steps.check.outputs.latest }})."
