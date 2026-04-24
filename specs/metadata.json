@@ -1,7 +1,7 @@
 {
   "name": "spec-kit",
-  "version": "0.7.3",
-  "fork_version": "satware-v0.7.3+1",
+  "version": "0.8.0",
+  "fork_version": "satware-v0.8.0",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
