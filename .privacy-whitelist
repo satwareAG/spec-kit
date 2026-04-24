@@ -1,2 +1,3 @@
 # Whitelist patterns for check-privacy-leaks.sh
 scripts/bash/check-privacy-leaks.sh
+tests/shell/test_check_privacy_leaks.bats
