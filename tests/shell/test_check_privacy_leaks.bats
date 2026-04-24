@@ -14,7 +14,13 @@ setup() {
 
 @test "privacy: passes on empty tmp repo" {
     tmpdir="$(mktemp -d)"
-    ( cd "$tmpdir" && git init -q && git commit --allow-empty -q -m init )
+    (
+        cd "$tmpdir"
+        git init -q
+        git config user.email bats@example.com
+        git config user.name bats
+        git commit --allow-empty -q -m init
+    )
     run "$CHECK" "$tmpdir"
     rm -rf "$tmpdir"
     [ "$status" -eq 0 ]
