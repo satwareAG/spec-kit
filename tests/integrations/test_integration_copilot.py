@@ -587,9 +587,13 @@ class TestCopilotSkillsMode:
             ".specify/integrations/speckit.manifest.json",
             # Scripts (sh)
             ".specify/scripts/bash/check-prerequisites.sh",
+            ".specify/scripts/bash/check-privacy-leaks.sh",
+            ".specify/scripts/bash/check-upstream-sync.sh",
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
+            ".specify/scripts/bash/eod.sh",
             ".specify/scripts/bash/setup-plan.sh",
+            ".specify/scripts/bash/sod.sh",
             # Templates
             ".specify/templates/checklist-template.md",
             ".specify/templates/constitution-template.md",
