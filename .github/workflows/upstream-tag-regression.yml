@@ -1,0 +1,166 @@
+name: Upstream Tag Regression
+
+# IPADP Phase 4.1 (issue #22): dry-merge a new upstream `github/spec-kit`
+# release tag into a throwaway branch and run the integration test suite so
+# fork-agent breakage is detected before a human starts the sync.
+#
+# Triggers:
+#   - workflow_dispatch with a tag input (manual/baseline)
+#   - issues.opened/edited when an `upstream-sync` issue is filed by
+#     upstream-sync-check.yml (the rolling tracking issue from IPADP Phase 3.1)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Upstream tag to regression-test (e.g. v0.7.3)"
+        required: true
+        default: "v0.7.3"
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  regression:
+    # Run on manual dispatch, OR when the triggering issue carries the
+    # `upstream-sync` label (filter out all unrelated issue events).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       contains(github.event.issue.labels.*.name, 'upstream-sync'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout fork (main-speck)
+        uses: actions/checkout@v4
+        with:
+          ref: main-speck
+          fetch-depth: 0
+
+      - name: Resolve upstream tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
+          else
+            # Parse title like: "upstream-sync: v0.7.4 available"
+            TAG="$(printf '%s' "$ISSUE_TITLE" | sed -nE 's/.*upstream-sync:[[:space:]]*(v[0-9][^ ]*).*/\1/p')"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::Could not determine upstream tag from event."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $TAG"
+
+      - name: Add upstream remote and fetch tag
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/github/spec-kit.git
+          git fetch --no-tags upstream "refs/tags/${TAG}:refs/tags/${TAG}"
+          git config user.email "ipadp-bot@users.noreply.github.com"
+          git config user.name  "ipadp-regression-bot"
+
+      - name: Dry-merge upstream tag into throwaway branch
+        id: merge
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git checkout -b "regression/${TAG}"
+          if git merge --no-edit "${TAG}"; then
+            echo "merge_status=clean" >> "$GITHUB_OUTPUT"
+          else
+            echo "merge_status=conflict" >> "$GITHUB_OUTPUT"
+            echo "::warning::Merge conflict detected — aborting and running tests on main-speck HEAD as fallback baseline."
+            git merge --abort || true
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run integration tests
+        id: pytest
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          uv run pytest tests/integrations/ -x -q 2>&1 | tee pytest.out
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Identify broken fork agent (on failure)
+        id: diagnose
+        if: steps.pytest.outputs.exit_code != '0'
+        run: |
+          set -euo pipefail
+          FORK_AGENTS="agy bob iflow kimi hermes cline"
+          BROKEN=""
+          for a in $FORK_AGENTS; do
+            if grep -qE "test_integration_${a}\b|integrations/${a}/" pytest.out; then
+              BROKEN="$BROKEN $a"
+            fi
+          done
+          BROKEN="$(echo "$BROKEN" | xargs || true)"
+          [ -z "$BROKEN" ] && BROKEN="(none identified — upstream-side failure)"
+          echo "broken=$BROKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Compose result comment
+        id: comment
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          MERGE_STATUS: ${{ steps.merge.outputs.merge_status }}
+          PYTEST_EXIT: ${{ steps.pytest.outputs.exit_code }}
+          BROKEN: ${{ steps.diagnose.outputs.broken }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### 🤖 Upstream regression report — \`$TAG\`"
+            echo
+            if [ "$MERGE_STATUS" = "clean" ] && [ "$PYTEST_EXIT" = "0" ]; then
+              echo "✅ **All fork agents pass on \`$TAG\`.** Dry-merge clean, 835 integration tests green."
+            elif [ "$MERGE_STATUS" = "conflict" ]; then
+              echo "⚠️ **Merge conflict** during dry-merge of \`$TAG\` into \`main-speck\`. Manual resolution required."
+              if [ "$PYTEST_EXIT" != "0" ]; then
+                echo ""
+                echo "Fallback pytest on \`main-speck\` HEAD also failed (exit $PYTEST_EXIT)."
+              fi
+            else
+              echo "❌ **Integration tests failed** after dry-merging \`$TAG\` (pytest exit $PYTEST_EXIT)."
+              echo ""
+              echo "Likely broken fork agent(s): **$BROKEN**"
+            fi
+            echo ""
+            echo "Run: $RUN_URL"
+          } > comment.md
+          cat comment.md
+
+      - name: Post result on tracking issue
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file comment.md
+
+      - name: Surface result on manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        run: cat comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail job if tests failed
+        if: steps.pytest.outputs.exit_code != '0' || steps.merge.outputs.merge_status == 'conflict'
+        run: |
+          echo "::error::Regression check failed for ${{ steps.tag.outputs.tag }} (see comment)."
+          exit 1
