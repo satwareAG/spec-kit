@@ -24,9 +24,10 @@
     }
   },
   "downstream": {
-    "cline-rules": {
-      "forge": "gitlab",
+    "harness": {
+      "forge": "gitea",
       "visibility": "private",
+      "local_path": "~/internal/harness",
       "role": "consumes SDD methodology + templates"
     },
     "wiki": {
@@ -37,7 +38,7 @@
     "amicron-platform": {
       "forge": "gitlab",
       "visibility": "private",
-      "role": "transitive consumer via cline-rules"
+      "role": "transitive consumer via harness"
     }
   },
   "custom_integrations": [
@@ -50,8 +51,8 @@
     "ci_workflow": ".github/workflows/privacy-check.yml"
   },
   "morning_protocol": {
-    "source": "~/Documents/Cline/Workflows/sod.protocol.md",
-    "eod_source": "~/Documents/Cline/Workflows/eod.protocol.md",
+    "source": "~/internal/harness/workflows/sod.protocol.md",
+    "eod_source": "~/internal/harness/workflows/eod.protocol.md",
     "upstream_sync_check": "scripts/bash/check-upstream-sync.sh",
     "sod_hook": "scripts/bash/sod.sh",
     "eod_hook": "scripts/bash/eod.sh",
@@ -60,7 +61,7 @@
     "docs": "docs/ipadp-l3-automation.md"
   },
   "cline_harmony": {
-    "rules_source": "~/Documents/Cline/Rules/",
+    "rules_source": "~/internal/harness/rules",
     "key_rules": [
       "methodology.core.md",
       "methodology.rlm.md",
@@ -71,6 +72,6 @@
       "agent.framework.md",
       "agent.guardrails.md"
     ],
-    "symlink_script": "~/Documents/Cline/scripts/env-setup-symlinks.sh"
+    "symlink_script": "~/internal/harness/scripts/env-setup-symlinks.sh"
   }
 }
