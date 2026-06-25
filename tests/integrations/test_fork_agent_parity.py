@@ -1,7 +1,13 @@
 """IPADP Phase 4.3 (issue #24) — Fork-agent parity audit.
 
-Asserts that every fork-only agent (not present in upstream github/spec-kit)
-satisfies the structural contract of ``IntegrationBase``:
+Originally asserted structural parity for agents the fork added ahead of
+upstream (``agy``, ``bob``, ``iflow``, ``kimi``, ``hermes``, ``cline``).
+All six have since been accepted into upstream github/spec-kit (by v0.11.8),
+so this module now serves as regression coverage: it verifies the agents the
+fork originated still register, satisfy the ``IntegrationBase`` structural
+contract, and run end-to-end via ``specify init``.
+
+Structural contract checks:
 
 - declares ``key``, ``config``, ``registrar_config``, ``context_file``
 - ``context_file`` is a non-empty string
@@ -19,6 +25,8 @@ from specify_cli.integrations import get_integration
 from specify_cli.integrations.base import IntegrationBase
 
 
+# Agents originated by this fork; all have since been upstreamed.
+# Kept as regression coverage for the fork's contribution.
 FORK_AGENTS = ["agy", "bob", "iflow", "kimi", "hermes", "cline"]
 
 REQUIRED_CONFIG_KEYS = {"name", "folder", "commands_subdir", "install_url", "requires_cli"}
@@ -62,6 +70,11 @@ class TestForkAgentParity:
     def test_specify_init_succeeds(self, key, tmp_path):
         """End-to-end: `specify init --integration <key>` must produce
         the configured commands directory without errors."""
+        if key == "hermes":
+            pytest.skip(
+                "Hermes installs to the user-global ~/.hermes/skills, not a "
+                "project-local dir; covered by test_integration_hermes.py"
+            )
         from typer.testing import CliRunner
         from specify_cli import app
 
@@ -73,7 +86,7 @@ class TestForkAgentParity:
             os.chdir(project)
             result = CliRunner().invoke(app, [
                 "init", "--here", "--integration", key,
-                "--script", "sh", "--no-git", "--ignore-agent-tools",
+                "--script", "sh", "--ignore-agent-tools",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
