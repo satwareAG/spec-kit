@@ -332,6 +332,7 @@ class TestGenericIntegration:
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
             ".specify/scripts/bash/eod.sh",
+            ".specify/scripts/bash/pre-pr.sh",
             ".specify/scripts/bash/setup-plan.sh",
             ".specify/scripts/bash/sod.sh",
             ".specify/scripts/bash/setup-tasks.sh",

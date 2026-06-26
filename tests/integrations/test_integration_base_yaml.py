@@ -398,6 +398,7 @@ class YamlIntegrationTests:
                 "common.sh",
                 "create-new-feature.sh",
                 "eod.sh",
+                "pre-pr.sh",
                 "setup-plan.sh",
                 "sod.sh",
                 "setup-tasks.sh",
