@@ -512,8 +512,8 @@ Key rules that govern SDD/TDD and day-to-day behavior on spec-kit:
 
 At the start of every working session an agent working on this repository SHOULD:
 
-1. Run the repo-local SoD hook: `bash scripts/daily-routine.sh sod` (delegates to Cline `~/Documents/Cline/Workflows/sod.protocol.md`, then runs `check-privacy-leaks.sh` and `check-upstream-sync.sh`).
-2. At the end of the session, run the repo-local EoD hook: `bash scripts/daily-routine.sh eod` (delegates to Cline `~/Documents/Cline/Workflows/eod.protocol.md`, then runs `check-privacy-leaks.sh`).
+1. Run the repo-local SoD hook: `bash scripts/daily-routine.sh sod` (references harness `~/internal/harness/workflows/sod.protocol.md` when available, then runs `check-privacy-leaks.sh` and `check-upstream-sync.sh`).
+2. At the end of the session, run the repo-local EoD hook: `bash scripts/daily-routine.sh eod` (references harness `~/internal/harness/workflows/eod.protocol.md` when available, then runs `check-privacy-leaks.sh`).
 
 In CI, `.github/workflows/upstream-sync-check.yml` runs `scripts/bash/check-upstream-sync.sh` on a daily schedule and opens/updates a rolling `upstream-sync: <tag> available` issue when a new upstream `github/spec-kit` release tag is detected.
 
@@ -530,7 +530,8 @@ See `docs/fork-agent-parity.md` for the fork-agent parity audit (IPADP Phase 4.3
 5. **Implement** — make the tests pass with the minimum change set.
 6. **Checklists** — fulfill `templates/checklist-template.md` prior to merge.
 7. **Privacy + upstream sync** — verify via the two scripts above.
-8. **Commit + PR** — follow `git.standards.md` (conventional commits, signed trailers where required).
+8. **Pre-PR check** — run `bash scripts/daily-routine.sh pre-pr` before pushing to catch lint/test failures locally. Runs ruff, integration tests, privacy check, and upstream sync in a single pass.
+9. **Commit + PR** — follow `git.standards.md` (conventional commits, signed trailers where required).
 
 ---
 
