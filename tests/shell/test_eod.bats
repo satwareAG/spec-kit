@@ -7,27 +7,27 @@ setup() {
     EOD="$REPO_ROOT/scripts/bash/eod.sh"
 }
 
-@test "eod: runs and exits 0 on clean tree with Cline stack missing" {
-    CLINE_DIR="/nonexistent/cline/path" run "$EOD"
+@test "eod: runs and exits 0 on clean tree with harness missing" {
+    HARNESS_DIR="/nonexistent/harness/path" run "$EOD"
     [ "$status" -eq 0 ]
     [[ "$output" == *"End-of-Day"* ]]
-    [[ "$output" == *"Cline stack not found"* ]]
+    [[ "$output" == *"Harness not found"* ]]
 }
 
 @test "eod: invokes privacy check" {
-    CLINE_DIR="/nonexistent/cline/path" run "$EOD"
+    HARNESS_DIR="/nonexistent/harness/path" run "$EOD"
     [ "$status" -eq 0 ]
     [[ "$output" == *"privacy leak check"* ]]
     [[ "$output" == *"privacy check passed"* ]]
 }
 
-@test "eod: references Cline protocol when stack is present" {
+@test "eod: references harness protocol when harness is present" {
     tmpdir="$(mktemp -d)"
-    mkdir -p "$tmpdir/Workflows"
-    printf '# EoD protocol stub\n' > "$tmpdir/Workflows/eod.protocol.md"
-    CLINE_DIR="$tmpdir" run "$EOD"
+    mkdir -p "$tmpdir/workflows"
+    printf '# EoD protocol stub\n' > "$tmpdir/workflows/eod.protocol.md"
+    HARNESS_DIR="$tmpdir" run "$EOD"
     rm -rf "$tmpdir"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"Cline EoD protocol:"* ]]
+    [[ "$output" == *"EoD protocol:"* ]]
     [[ "$output" == *"eod.protocol.md"* ]]
 }
