@@ -180,6 +180,7 @@ class TestClineIntegration(MarkdownIntegrationTests):
                 "common.sh",
                 "create-new-feature.sh",
                 "eod.sh",
+                "pre-pr.sh",
                 "setup-plan.sh",
                 "setup-tasks.sh",
                 "sod.sh",

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # eod.sh — End-of-Day protocol for spec-kit (IPADP Phase 3.2).
 #
-# Delegates to ~/Documents/Cline/Workflows/eod.protocol.md when the Cline stack
-# is available and runs the repo's privacy check before session close.
+# References the harness EoD protocol when the harness repo is available
+# (default: ~/internal/harness) and runs the repo's privacy check before
+# session close.  Override with HARNESS_DIR env var.
 #
 # Exit codes:
 #   0  all checks passed
@@ -12,8 +13,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-CLINE_DIR="${CLINE_DIR:-$HOME/Documents/Cline}"
-PROTOCOL="$CLINE_DIR/Workflows/eod.protocol.md"
+CLINE_DIR="${HARNESS_DIR:-$HOME/internal/harness}"
+PROTOCOL="$CLINE_DIR/workflows/eod.protocol.md"
 
 echo "=== End-of-Day protocol ==="
 echo "Repo: $REPO_ROOT"
@@ -21,11 +22,11 @@ date
 
 if [ -f "$PROTOCOL" ]; then
     echo ""
-    echo "📖 Cline EoD protocol: $PROTOCOL"
-    echo "    (review manually — agents SHOULD follow its steps)"
+    echo "📖 EoD protocol: $PROTOCOL"
+    echo "    (review manually - agents SHOULD follow its steps)"
 else
     echo ""
-    echo "⚠️  Cline stack not found at $CLINE_DIR — skipping protocol reference."
+    echo "⚠️  Harness not found at $CLINE_DIR - skipping protocol reference."
 fi
 
 fail=0

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # sod.sh — Start-of-Day protocol for spec-kit (IPADP Phase 3.2).
 #
-# Delegates to ~/Documents/Cline/Workflows/sod.protocol.md when the Cline stack
-# is available and runs the repo's privacy + upstream-sync checks.
+# References the harness SoD protocol when the harness repo is available
+# (default: ~/internal/harness) and runs the repo's privacy + upstream-sync
+# checks.  Override with HARNESS_DIR env var.
 #
 # Exit codes:
 #   0  all checks passed
@@ -12,8 +13,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-CLINE_DIR="${CLINE_DIR:-$HOME/Documents/Cline}"
-PROTOCOL="$CLINE_DIR/Workflows/sod.protocol.md"
+CLINE_DIR="${HARNESS_DIR:-$HOME/internal/harness}"
+PROTOCOL="$CLINE_DIR/workflows/sod.protocol.md"
 
 echo "=== Start-of-Day protocol ==="
 echo "Repo: $REPO_ROOT"
@@ -21,12 +22,12 @@ date
 
 if [ -f "$PROTOCOL" ]; then
     echo ""
-    echo "📖 Cline SoD protocol: $PROTOCOL"
-    echo "    (review manually — agents SHOULD follow its steps)"
+    echo "📖 SoD protocol: $PROTOCOL"
+    echo "    (review manually - agents SHOULD follow its steps)"
 else
     echo ""
-    echo "⚠️  Cline stack not found at $CLINE_DIR — skipping protocol reference."
-    echo "    Set CLINE_DIR env var or install the Cline command center to enable."
+    echo "⚠️  Harness not found at $CLINE_DIR - skipping protocol reference."
+    echo "    Set HARNESS_DIR env var or clone the harness repo to enable."
 fi
 
 fail=0
