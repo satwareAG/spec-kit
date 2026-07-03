@@ -50,6 +50,26 @@ workflow_step_catalog_app = typer.Typer(
 workflow_step_app.add_typer(workflow_step_catalog_app, name="catalog")
 
 
+def _is_loopback_host(hostname: str | None) -> bool:
+    """Return True if *hostname* is a loopback address.
+
+    Covers the entire 127.0.0.0/8 range and all IPv6 loopback forms (e.g.
+    ``::1``, ``127.0.0.2``) via :func:`ipaddress.ip_address`, plus the
+    ``localhost`` DNS name. A non-IP hostname (regular DNS name) is treated
+    as non-loopback unless it is literally ``localhost``.
+    """
+    host = (hostname or "").strip()
+    if not host:
+        return False
+    if host == "localhost":
+        return True
+    try:
+        from ipaddress import ip_address
+        return ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 def _parse_input_values(input_values: list[str] | None) -> dict[str, Any]:
     """Parse repeated ``key=value`` CLI inputs into a dict.
 
@@ -613,19 +633,11 @@ def workflow_add(
 
     # Try as URL (http/https)
     if source.startswith("http://") or source.startswith("https://"):
-        from ipaddress import ip_address
         from urllib.parse import urlparse
         from specify_cli.authentication.http import open_url as _open_url
 
         parsed_src = urlparse(source)
-        src_host = parsed_src.hostname or ""
-        src_loopback = src_host == "localhost"
-        if not src_loopback:
-            try:
-                src_loopback = ip_address(src_host).is_loopback
-            except ValueError:
-                # Host is not an IP literal (e.g., a DNS name); keep default non-loopback.
-                pass
+        src_loopback = _is_loopback_host(parsed_src.hostname)
         if parsed_src.scheme != "https" and not (parsed_src.scheme == "http" and src_loopback):
             console.print("[red]Error:[/red] Only HTTPS URLs are allowed, except HTTP for localhost.")
             raise typer.Exit(1)
@@ -646,14 +658,7 @@ def workflow_add(
             with _open_url(source, timeout=30, extra_headers=_wf_url_extra_headers) as resp:
                 final_url = resp.geturl()
                 final_parsed = urlparse(final_url)
-                final_host = final_parsed.hostname or ""
-                final_lb = final_host == "localhost"
-                if not final_lb:
-                    try:
-                        final_lb = ip_address(final_host).is_loopback
-                    except ValueError:
-                        # Redirect host is not an IP literal; keep loopback as determined above.
-                        pass
+                final_lb = _is_loopback_host(final_parsed.hostname)
                 if final_parsed.scheme != "https" and not (final_parsed.scheme == "http" and final_lb):
                     console.print(f"[red]Error:[/red] URL redirected to non-HTTPS: {final_url}")
                     raise typer.Exit(1)
@@ -708,20 +713,10 @@ def workflow_add(
         raise typer.Exit(1)
 
     # Validate URL scheme (HTTPS required, HTTP allowed for localhost only)
-    from ipaddress import ip_address
     from urllib.parse import urlparse
 
     parsed_url = urlparse(workflow_url)
-    url_host = parsed_url.hostname or ""
-    is_loopback = False
-    if url_host == "localhost":
-        is_loopback = True
-    else:
-        try:
-            is_loopback = ip_address(url_host).is_loopback
-        except ValueError:
-            # Host is not an IP literal (e.g., a regular hostname); treat as non-loopback.
-            pass
+    is_loopback = _is_loopback_host(parsed_url.hostname)
     if parsed_url.scheme != "https" and not (parsed_url.scheme == "http" and is_loopback):
         console.print(
             f"[red]Error:[/red] Workflow '{source}' has an invalid install URL. "
@@ -752,14 +747,7 @@ def workflow_add(
             # Validate final URL after redirects
             final_url = response.geturl()
             final_parsed = urlparse(final_url)
-            final_host = final_parsed.hostname or ""
-            final_loopback = final_host == "localhost"
-            if not final_loopback:
-                try:
-                    final_loopback = ip_address(final_host).is_loopback
-                except ValueError:
-                    # Host is not an IP literal (e.g., a regular hostname); treat as non-loopback.
-                    pass
+            final_loopback = _is_loopback_host(final_parsed.hostname)
             if final_parsed.scheme != "https" and not (final_parsed.scheme == "http" and final_loopback):
                 if workflow_dir.exists():
                     import shutil
@@ -1233,7 +1221,7 @@ def workflow_step_add(
 
     def _safe_fetch(url: str) -> bytes:
         parsed = urlparse(url)
-        is_localhost = parsed.hostname in ("localhost", "127.0.0.1", "::1")
+        is_localhost = _is_loopback_host(parsed.hostname)
         if parsed.scheme != "https" and not (parsed.scheme == "http" and is_localhost):
             raise ValueError(f"Refusing to fetch from non-HTTPS URL: {url}")
         if not parsed.hostname:
@@ -1241,7 +1229,7 @@ def workflow_step_add(
         with _open_url(url, timeout=30) as resp:
             final_url = resp.geturl()
             final_parsed = urlparse(final_url)
-            final_is_localhost = final_parsed.hostname in ("localhost", "127.0.0.1", "::1")
+            final_is_localhost = _is_loopback_host(final_parsed.hostname)
             if final_parsed.scheme != "https" and not (
                 final_parsed.scheme == "http" and final_is_localhost
             ):
@@ -1516,8 +1504,7 @@ def workflow_step_remove(
                 # which would overwrite timestamps).
                 try:
                     if registry_metadata is not None:
-                        registry.data["steps"][step_id] = registry_metadata
-                        registry.save()
+                        registry.restore(step_id, registry_metadata)
                 except Exception as restore_exc:  # noqa: BLE001
                     console.print(
                         f"[yellow]Warning:[/yellow] Failed to restore registry entry "

@@ -716,6 +716,20 @@ class StepRegistry:
             return True
         return False
 
+    def restore(self, step_id: str, metadata: dict[str, Any]) -> None:
+        """Re-insert a step entry **verbatim** after a failed removal.
+
+        Unlike :meth:`add`, this does not touch ``installed_at`` /
+        ``updated_at`` — the *metadata* dict is persisted exactly as passed,
+        so a rollback can fully undo a prior :meth:`remove` without losing the
+        original install timestamps. ``metadata`` should typically be the
+        object previously returned by :meth:`get`.
+        """
+        import copy
+
+        self.data["steps"][step_id] = copy.deepcopy(metadata)
+        self.save()
+
     def get(self, step_id: str) -> dict[str, Any] | None:
         """Get metadata for an installed step."""
         return self.data["steps"].get(step_id)
