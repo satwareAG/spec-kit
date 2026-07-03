@@ -1,13 +1,14 @@
 # spec-kit (satwareAG fork)
 
 Comprehensive toolkit for Spec-Driven Development (SDD) and Test-Driven Development (TDD).
-This fork adds the `cline` and `hermes` agent integrations on top of upstream
-`github/spec-kit`. It is IPADP project #6 in the satware AG ecosystem.
+This fork tracks upstream `github/spec-kit` and contributes satware AG
+IPADP automation (privacy checks, upstream-sync, SoD/EoD protocol).
+It is IPADP project #6 in the satware AG ecosystem.
 
 ## Status
 
-- Fork version: satware-v0.7.3+1
-- Upstream version: 0.7.3
+- Fork version: satware-v0.12.4+1
+- Upstream version: 0.12.4
 - IPADP conformance level: L3 (AGENTS.md + specs/metadata.json + privacy validation + morning protocol)
 
 ## Docs

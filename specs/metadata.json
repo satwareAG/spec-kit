@@ -1,7 +1,7 @@
 {
   "name": "spec-kit",
-  "version": "0.11.8",
-  "fork_version": "satware-v0.11.8",
+  "version": "0.12.4",
+  "fork_version": "satware-v0.12.4",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
@@ -41,10 +41,7 @@
       "role": "transitive consumer via harness"
     }
   },
-  "custom_integrations": [
-    "cline",
-    "hermes"
-  ],
+  "custom_integrations": [],
   "privacy": {
     "validator": "scripts/bash/check-privacy-leaks.sh",
     "whitelist": ".privacy-whitelist",

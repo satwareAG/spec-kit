@@ -2,18 +2,32 @@
 
 Originally asserted structural parity for agents the fork added ahead of
 upstream (``agy``, ``bob``, ``iflow``, ``kimi``, ``hermes``, ``cline``).
-All six have since been accepted into upstream github/spec-kit (by v0.11.8),
-so this module now serves as regression coverage: it verifies the agents the
-fork originated still register, satisfy the ``IntegrationBase`` structural
-contract, and run end-to-end via ``specify init``.
+All six were accepted into upstream github/spec-kit by v0.11.8, so this
+module serves as regression coverage for the agents the fork originated.
+
+Upstream retirements since v0.11.8:
+- ``iflow`` — retired in v0.12.2 (product discontinued); the fork followed
+  upstream and removed it, dropping it from this list.
+- ``windsurf`` — retired in v0.12.2 (absorbed into Cognition Devin); never
+  a fork-originated agent, not tracked here.
+- ``roo`` — retired in v0.12.3 (extension shut down); never a fork-originated
+  agent, not tracked here.
+
+The remaining five (``agy``, ``bob``, ``kimi``, ``hermes``, ``cline``) are
+still registered upstream and verify the ``IntegrationBase`` structural
+contract plus end-to-end ``specify init``.
 
 Structural contract checks:
 
-- declares ``key``, ``config``, ``registrar_config``, ``context_file``
-- ``context_file`` is a non-empty string
+- declares ``key``, ``config``, ``registrar_config``
 - registers in the global registry
 - ``specify init --integration <key>`` succeeds and produces the configured
   commands directory.
+
+Note: ``context_file`` is intentionally **not** asserted. Since v0.12.0
+(PR #3097) the agent-context extension is a full opt-in and owns all
+context-file knowledge via ``agent-context-defaults.json``; integration
+classes no longer declare ``context_file`` (see AGENTS.md pitfall #2).
 """
 from __future__ import annotations
 
@@ -26,8 +40,9 @@ from specify_cli.integrations.base import IntegrationBase
 
 
 # Agents originated by this fork; all have since been upstreamed.
+# iflow was dropped in sync/upstream-v0.12.4 after upstream retired it in v0.12.2.
 # Kept as regression coverage for the fork's contribution.
-FORK_AGENTS = ["agy", "bob", "iflow", "kimi", "hermes", "cline"]
+FORK_AGENTS = ["agy", "bob", "kimi", "hermes", "cline"]
 
 REQUIRED_CONFIG_KEYS = {"name", "folder", "commands_subdir", "install_url", "requires_cli"}
 REQUIRED_REGISTRAR_KEYS = {"dir", "format", "args", "extension"}
@@ -60,12 +75,6 @@ class TestForkAgentParity:
         missing = REQUIRED_REGISTRAR_KEYS - set(rc)
         assert not missing, f"{key}: registrar_config missing keys {missing}"
         assert rc["format"] in {"markdown", "toml", "yaml"}
-
-    def test_context_file_nonempty(self, key):
-        cf = get_integration(key).context_file
-        assert isinstance(cf, str) and cf.strip(), (
-            f"{key}: context_file must be a non-empty string"
-        )
 
     def test_specify_init_succeeds(self, key, tmp_path):
         """End-to-end: `specify init --integration <key>` must produce
