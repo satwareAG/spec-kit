@@ -2,7 +2,7 @@
 
 **Feature Branch**: `spec/upstream-release-sync-strategy`
 **Created**: 2026-04-17
-**Status**: Draft
+**Status**: Implemented
 **Input**: Keep satwareAG/spec-kit fork updated with upstream release versions only, while preserving custom agent integrations (cline, hermes) as part of IPADP.
 
 ## Context
