@@ -115,6 +115,63 @@ class TestInitIntegrationFlag:
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == specify_cli.DEFAULT_INIT_INTEGRATION
 
+    def test_init_here_nonempty_noninteractive_errors_with_force_guidance(self, tmp_path):
+        """`init --here` on a non-empty directory with no confirmation input (empty
+        stdin) must fail fast with guidance to use --force, instead of the bare
+        'Aborted.' from an EOF on typer.confirm. CliRunner with no `input=` provides
+        empty stdin, so typer.confirm raises Abort, which the command converts to the
+        actionable error."""
+        from typer.testing import CliRunner
+        from specify_cli import app
+
+        project = tmp_path / "nonempty-here"
+        project.mkdir()
+        (project / "existing.txt").write_text("keep me", encoding="utf-8")
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(project)
+            result = CliRunner().invoke(app, [
+                "init", "--here", "--integration", "copilot", "--script", "sh", "--ignore-agent-tools",
+            ], catch_exceptions=False)
+        finally:
+            os.chdir(old_cwd)
+
+        assert result.exit_code == 1, result.output
+        assert "--force" in result.output
+        # Aborted before scaffolding: the pre-existing file is untouched.
+        assert (project / "existing.txt").read_text(encoding="utf-8") == "keep me"
+
+    def test_init_here_interactive_cancel_exits_zero(self, tmp_path, monkeypatch):
+        """An interactive Ctrl+C at the merge confirmation (typer.Abort on a TTY)
+        is a normal cancellation — exit 0, "cancelled" — NOT the missing-input
+        --force error, which is reserved for non-interactive EOF. Guards the
+        regression where Abort was caught unconditionally and every cancel became
+        an exit-1 --force error."""
+        from typer.testing import CliRunner
+        from specify_cli import app
+        import specify_cli.commands.init as init_mod
+
+        # Simulate an interactive terminal so the Abort is treated as a cancel.
+        monkeypatch.setattr(init_mod, "_stdin_is_interactive", lambda: True)
+
+        project = tmp_path / "cancel-here"
+        project.mkdir()
+        (project / "existing.txt").write_text("keep me", encoding="utf-8")
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(project)
+            # No input → typer.confirm raises Abort (stands in for Ctrl+C).
+            result = CliRunner().invoke(app, [
+                "init", "--here", "--integration", "copilot", "--script", "sh", "--ignore-agent-tools",
+            ], catch_exceptions=False)
+        finally:
+            os.chdir(old_cwd)
+
+        assert result.exit_code == 0, result.output
+        assert "cancelled" in result.output.lower()
+        assert "--force" not in result.output  # not the missing-input error
+        assert (project / "existing.txt").read_text(encoding="utf-8") == "keep me"
+
     def test_integration_copilot_auto_promotes(self, tmp_path):
         from typer.testing import CliRunner
         from specify_cli import app
@@ -166,6 +223,66 @@ class TestInitIntegrationFlag:
         assert "preset install exploded with context" in normalized
         assert "Continuing without the optional preset" in normalized
         assert "Project ready" in normalized
+
+    def test_init_with_local_preset_seeds_manifest_constitution(
+        self, tmp_path, monkeypatch
+    ):
+        from typer.testing import CliRunner
+        from specify_cli import app
+        from specify_cli.presets import PresetManager
+
+        monkeypatch.setattr(
+            PresetManager,
+            "_seed_constitution_from_preset",
+            lambda *_args, **_kwargs: None,
+        )
+
+        preset_dir = tmp_path / "constitution-preset"
+        (preset_dir / "organization").mkdir(parents=True)
+        preset_content = "# Ratified Organization Constitution\n"
+        (preset_dir / "organization" / "ratified.md").write_text(preset_content)
+        (preset_dir / "preset.yml").write_text(
+            yaml.safe_dump({
+                "schema_version": "1.0",
+                "preset": {
+                    "id": "constitution-preset",
+                    "name": "Constitution Preset",
+                    "version": "1.0.0",
+                    "description": "Provides a ratified constitution",
+                },
+                "requires": {"speckit_version": ">=0.1.0"},
+                "provides": {
+                    "templates": [{
+                        "type": "template",
+                        "name": "constitution-template",
+                        "file": "organization/ratified.md",
+                        "strategy": "replace",
+                    }]
+                },
+            })
+        )
+        project = tmp_path / "init-with-preset"
+
+        result = CliRunner().invoke(
+            app,
+            [
+                "init",
+                str(project),
+                "--integration",
+                "copilot",
+                "--script",
+                "sh",
+                "--ignore-agent-tools",
+                "--preset",
+                str(preset_dir),
+            ],
+            catch_exceptions=False,
+        )
+
+        assert result.exit_code == 0, result.output
+        assert (
+            project / ".specify" / "memory" / "constitution.md"
+        ).read_text() == preset_content
 
     def test_integration_claude_here_preserves_preexisting_commands(self, tmp_path):
         from typer.testing import CliRunner
@@ -256,6 +373,18 @@ class TestInitIntegrationFlag:
         # Other shared files should also be installed
         assert (scripts_dir / "setup-plan.sh").exists()
         assert (templates_dir / "plan-template.md").exists()
+
+    def test_shared_infra_installs_python_scripts_for_py(self, tmp_path):
+        from specify_cli import _install_shared_infra
+
+        project = tmp_path / "python-scripts"
+        project.mkdir()
+
+        _install_shared_infra(project, "py")
+
+        assert (
+            project / ".specify" / "scripts" / "python" / "common.py"
+        ).exists()
 
     def test_shared_infra_removes_stale_managed_script(self, tmp_path):
         """A managed script the core no longer ships (e.g. the legacy
@@ -835,7 +964,8 @@ class TestInitIntegrationFlag:
         assert (scripts_dir / "common.sh").read_text(encoding="utf-8") != custom_content
 
     def test_init_here_without_force_preserves_shared_infra(self, tmp_path):
-        """E2E: specify init --here (no --force) preserves existing shared infra files."""
+        """E2E: confirming the merge with piped "y" (no --force) preserves
+        existing shared infra files (unlike --force, which overwrites them)."""
         from typer.testing import CliRunner
         from specify_cli import app
 
@@ -2073,3 +2203,44 @@ class TestIntegrationCatalogDiscoveryCLI:
         assert listing.exit_code == 0, listing.output
         assert "default" in listing.output
         assert "community" in listing.output
+
+
+def test_refresh_shared_templates_preserves_recovered_user_file(tmp_path):
+    """refresh_shared_templates must not overwrite a recovered (pre-existing
+    user) template without --force, matching install_shared_infra's gate (#2918).
+    """
+    from specify_cli.shared_infra import (
+        load_speckit_manifest,
+        refresh_shared_templates,
+    )
+
+    project = tmp_path / "proj"
+    templates_dir = project / ".specify" / "templates"
+    templates_dir.mkdir(parents=True)
+    user_file = templates_dir / "spec-template.md"
+    user_file.write_text("# USER CUSTOM CONTENT\n", encoding="utf-8")
+
+    # Record the pre-existing file as recovered (its hash was adopted, not written).
+    manifest = load_speckit_manifest(project, version="test", console=_NoopConsole())
+    rel = ".specify/templates/spec-template.md"
+    manifest.record_existing(rel, recovered=True)
+    manifest.save()
+
+    # Bundled source ships a different body for the same template.
+    core_pack = tmp_path / "core-pack"
+    src = core_pack / "templates"
+    src.mkdir(parents=True)
+    (src / "spec-template.md").write_text("# BUNDLED CONTENT v2\n", encoding="utf-8")
+
+    refresh_shared_templates(
+        project,
+        version="test",
+        core_pack=core_pack,
+        repo_root=tmp_path / "unused",
+        console=_NoopConsole(),
+        invoke_separator=".",
+        force=False,
+    )
+
+    # Recovered user content must survive (fail-before: replaced by bundled body).
+    assert user_file.read_text(encoding="utf-8") == "# USER CUSTOM CONTENT\n"
