@@ -15,7 +15,7 @@ This fork (`satwareAG/spec-kit`) adds proprietary agent integrations (cline, her
 |------|-------|
 | Fork version | 0.12.17 (matches upstream release tag `v0.12.17`) |
 | Upstream main | 0.12.18.dev0 (unreleased development) |
-| Custom integrations | 6 fork agents: agy, bob, cline, hermes, iflow, kimi |
+| Custom integrations | 5 fork agents: agy, bob, cline, hermes, kimi |
 | Sync status | Up to date with `v0.12.17` (merged 2026-07-17) |
 
 ### Custom Fork Additions (must survive sync)
@@ -26,9 +26,8 @@ This fork (`satwareAG/spec-kit`) adds proprietary agent integrations (cline, her
 | `src/specify_cli/integrations/bob/` | Bob agent integration |
 | `src/specify_cli/integrations/cline/` | Cline agent integration |
 | `src/specify_cli/integrations/hermes/` | Hermes agent integration |
-| `src/specify_cli/integrations/iflow/` | iFlow agent integration |
 | `src/specify_cli/integrations/kimi/` | Kimi agent integration |
-| `src/specify_cli/integrations/__init__.py` | Modified to register all 6 fork agents |
+| `src/specify_cli/integrations/__init__.py` | Modified to register all 5 fork agents |
 | `pyproject.toml` | Version bumped with fork additions |
 | `CHANGELOG.md` | Fork-specific changelog |
 
@@ -40,7 +39,7 @@ As a maintainer, when upstream publishes a new release tag (e.g., `v0.7.3`), I c
 
 **Why this priority**: Core workflow - without clean sync, fork drifts and becomes unmaintainable.
 
-**Independent Test**: Checkout fork, merge upstream tag `v0.7.3`, run test suite, verify agy, bob, cline, hermes, iflow, kimi integrations still registered and functional.
+**Independent Test**: Checkout fork, merge upstream tag `v0.7.3`, run test suite, verify agy, bob, cline, hermes, kimi integrations still registered and functional.
 
 ### User Story 2 - Skip Unreleased Development Commits (Priority: P1)
 
@@ -56,7 +55,7 @@ As a maintainer, when upstream modifies shared files (e.g., `integrations/__init
 
 **Why this priority**: Conflict resolution is the highest-risk operation; documented procedure prevents accidental loss.
 
-**Independent Test**: Simulate conflict by cherry-picking an upstream commit touching `__init__.py`, resolve using procedure, verify both upstream and all 6 fork integrations registered.
+**Independent Test**: Simulate conflict by cherry-picking an upstream commit touching `__init__.py`, resolve using procedure, verify both upstream and all 5 fork integrations registered.
 
 ### User Story 4 - Validate Fork Integrity After Sync (Priority: P2)
 
@@ -64,7 +63,7 @@ As a maintainer, after syncing to a new release, I can run a validation procedur
 
 **Why this priority**: Quality gate - catches sync issues before push.
 
-**Independent Test**: Run validation script, confirm all checks pass (version matches tag, `specify --help` lists agy, bob, cline, hermes, iflow, kimi, tests green).
+**Independent Test**: Run validation script, confirm all checks pass (version matches tag, `specify --help` lists agy, bob, cline, hermes, kimi, tests green).
 
 ### User Story 5 - Automated Sync Detection (Priority: P3)
 
@@ -96,7 +95,7 @@ After sync, the full test suite (`pytest tests/`) MUST pass with 0 failures.
 
 ### FR-005: Conflict Resolution Procedure
 
-A documented procedure MUST exist for resolving conflicts in shared files (`integrations/__init__.py`) that preserves both upstream additions and the 6 custom fork agent registrations (agy, bob, cline, hermes, iflow, kimi).
+A documented procedure MUST exist for resolving conflicts in shared files (`integrations/__init__.py`) that preserves both upstream additions and the 5 custom fork agent registrations (agy, bob, cline, hermes, kimi).
 
 ### FR-006: IPADP Conformance
 
@@ -114,9 +113,9 @@ The fork MUST maintain `AGENTS.md`, `specs/metadata.json` with upstream/downstre
 |----------|-------------|
 | Sync completes cleanly | Merge of upstream tag produces no unresolved conflicts or at most documented resolution steps |
 | All tests pass | `pytest tests/` returns 0 failures |
-| Integrations functional | `specify init --help` lists agy, bob, cline, hermes, iflow, kimi as available integrations |
+| Integrations functional | `specify init --help` lists agy, bob, cline, hermes, kimi as available integrations |
 | Version correct | `pyproject.toml` version matches merged tag |
-| No custom code lost | `git diff` shows all 6 fork agent directories intact post-merge |
+| No custom code lost | `git diff` shows all 5 fork agent directories intact post-merge |
 
 ## Sync Procedure (Reference Implementation)
 
@@ -134,8 +133,8 @@ git merge-base --is-ancestor $LATEST_TAG HEAD && echo "Already merged" && exit 0
 git merge $LATEST_TAG --no-edit
 
 # 5. Resolve conflicts in shared files if any
-#    - integrations/__init__.py: keep both upstream registrations AND all 6 fork agents
-#      (agy, bob, cline, hermes, iflow, kimi)
+#    - integrations/__init__.py: keep both upstream registrations AND all 5 fork agents
+#      (agy, bob, cline, hermes, kimi)
 
 # 6. Update version in pyproject.toml to match tag
 

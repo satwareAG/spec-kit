@@ -41,7 +41,7 @@
       "role": "transitive consumer via harness"
     }
   },
-  "custom_integrations": ["agy", "bob", "cline", "hermes", "iflow", "kimi"],
+  "custom_integrations": ["agy", "bob", "cline", "hermes", "kimi"],
   "privacy": {
     "validator": "scripts/bash/check-privacy-leaks.sh",
     "whitelist": ".privacy-whitelist",
