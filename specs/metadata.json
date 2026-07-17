@@ -8,7 +8,7 @@
   "ipadp": {
     "project_number": 6,
     "conformance_level": "L3",
-    "issue_tracker": "https://github.com/satwareAG/spec-kit/issues/6",
+    "issue_tracker": "https://github.com/satwareAG/spec-kit/issues",
     "rfc_location": "<internal>/wiki/specs/rfc-interproject-agentic-development.md"
   },
   "upstream": {
@@ -38,7 +38,7 @@
     "amicron-platform": {
       "forge": "gitlab",
       "visibility": "private",
-      "role": "transitive consumer via harness"
+      "role": "consumes SDD methodology"
     }
   },
   "custom_integrations": ["agy", "bob", "cline", "hermes", "kimi"],
