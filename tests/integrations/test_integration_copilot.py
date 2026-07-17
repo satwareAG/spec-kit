@@ -257,6 +257,7 @@ class TestCopilotIntegration:
             ".specify/templates/plan-template.md",
             ".specify/templates/spec-template.md",
             ".specify/templates/tasks-template.md",
+            ".specify/memory/.constitution-template.json",
             ".specify/memory/constitution.md",
             ".specify/workflows/speckit/workflow.yml",
             ".specify/workflows/workflow-registry.json",
@@ -318,6 +319,7 @@ class TestCopilotIntegration:
             ".specify/templates/plan-template.md",
             ".specify/templates/spec-template.md",
             ".specify/templates/tasks-template.md",
+            ".specify/memory/.constitution-template.json",
             ".specify/memory/constitution.md",
             ".specify/workflows/speckit/workflow.yml",
             ".specify/workflows/workflow-registry.json",
@@ -734,6 +736,7 @@ class TestCopilotSkillsMode:
             ".specify/templates/plan-template.md",
             ".specify/templates/spec-template.md",
             ".specify/templates/tasks-template.md",
+            ".specify/memory/.constitution-template.json",
             ".specify/memory/constitution.md",
             # Bundled workflow
             ".specify/workflows/speckit/workflow.yml",
