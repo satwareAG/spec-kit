@@ -27,7 +27,7 @@
     "harness": {
       "forge": "gitea",
       "visibility": "private",
-      "local_path": "~/internal/harness",
+      "local_path": "$SATWARE_HARNESS",
       "role": "consumes SDD methodology + templates"
     },
     "wiki": {
@@ -41,15 +41,15 @@
       "role": "transitive consumer via harness"
     }
   },
-  "custom_integrations": [],
+  "custom_integrations": ["agy", "bob", "cline", "hermes", "kimi"],
   "privacy": {
     "validator": "scripts/bash/check-privacy-leaks.sh",
     "whitelist": ".privacy-whitelist",
     "ci_workflow": ".github/workflows/privacy-check.yml"
   },
   "morning_protocol": {
-    "source": "~/internal/harness/workflows/sod.protocol.md",
-    "eod_source": "~/internal/harness/workflows/eod.protocol.md",
+    "source": "$SATWARE_HARNESS/workflows/sod.protocol.md",
+    "eod_source": "$SATWARE_HARNESS/workflows/eod.protocol.md",
     "upstream_sync_check": "scripts/bash/check-upstream-sync.sh",
     "sod_hook": "scripts/bash/sod.sh",
     "eod_hook": "scripts/bash/eod.sh",
@@ -58,17 +58,17 @@
     "docs": "docs/ipadp-l3-automation.md"
   },
   "cline_harmony": {
-    "rules_source": "~/internal/harness/rules",
+    "rules_source": "$SATWARE_HARNESS/rules",
     "key_rules": [
-      "methodology.core.md",
-      "methodology.rlm.md",
-      "code.quality.md",
-      "git.standards.md",
-      "context.management.md",
-      "docs.markdown.md",
       "agent.framework.md",
-      "agent.guardrails.md"
+      "agent.guardrails.md",
+      "code.cross-platform.md",
+      "code.quality.md",
+      "context.management.md",
+      "ecosystem.ipadp.md",
+      "methodology.core.md",
+      "release.immutability.md"
     ],
-    "symlink_script": "~/internal/harness/scripts/env-setup-symlinks.sh"
+    "symlink_script": "$SATWARE_HARNESS/scripts/env-setup-symlinks.sh"
   }
 }

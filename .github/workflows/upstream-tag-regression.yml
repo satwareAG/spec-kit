@@ -105,7 +105,7 @@ jobs:
         if: steps.pytest.outputs.exit_code != '0'
         run: |
           set -euo pipefail
-          FORK_AGENTS="agy bob iflow kimi hermes cline"
+          FORK_AGENTS="agy bob kimi hermes cline"
           BROKEN=""
           for a in $FORK_AGENTS; do
             if grep -qE "test_integration_${a}\b|integrations/${a}/" pytest.out; then

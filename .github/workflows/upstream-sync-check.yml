@@ -64,7 +64,7 @@ jobs:
             "### Action" \
             "1. Create a sync branch: \`git checkout -b sync/upstream-${LATEST} main-speck\`" \
             "2. Merge: \`git merge ${LATEST}\`" \
-            "3. Resolve conflicts, preserve fork agents (agy, bob, iflow, kimi, hermes, cline)." \
+            "3. Resolve conflicts, preserve fork agents (agy, bob, kimi, hermes, cline)." \
             "4. Run \`uv run pytest tests/integrations/ -x -q\`." \
             "5. Open PR to \`main-speck\`; tag \`satware-${LATEST}+1\` after merge." \
             "" \

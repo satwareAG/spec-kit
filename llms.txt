@@ -39,6 +39,6 @@ It is IPADP project #6 in the satware AG ecosystem.
 ## IPADP
 
 - RFC: `specs/rfc-interproject-agentic-development.md` in the internal satware AG `wiki` repository
-- Morning protocol (SoD): `~/Documents/Cline/Workflows/sod.protocol.md`
-- EoD protocol: `~/Documents/Cline/Workflows/eod.protocol.md`
-- Global agent rules: `~/Documents/Cline/Rules/`
+- Morning protocol (SoD): `$SATWARE_HARNESS/workflows/sod.protocol.md`
+- EoD protocol: `$SATWARE_HARNESS/workflows/eod.protocol.md`
+- Global agent rules: `$SATWARE_HARNESS/rules/`
