@@ -7,8 +7,8 @@ It is IPADP project #6 in the satware AG ecosystem.
 
 ## Status
 
-- Fork version: satware-v0.12.17
-- Upstream version: 0.12.17
+- Fork version: satware-v0.13.0
+- Upstream version: 0.13.0
 - IPADP conformance level: L3 (AGENTS.md + specs/metadata.json + privacy validation + morning protocol)
 
 ## Docs

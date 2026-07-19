@@ -1,7 +1,7 @@
 {
   "name": "spec-kit",
-  "version": "0.12.17",
-  "fork_version": "satware-v0.12.17",
+  "version": "0.13.0",
+  "fork_version": "satware-v0.13.0",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
@@ -41,7 +41,13 @@
       "role": "consumes SDD methodology"
     }
   },
-  "custom_integrations": ["agy", "bob", "cline", "hermes", "kimi"],
+  "custom_integrations": [
+    "agy",
+    "bob",
+    "cline",
+    "hermes",
+    "kimi"
+  ],
   "privacy": {
     "validator": "scripts/bash/check-privacy-leaks.sh",
     "whitelist": ".privacy-whitelist",

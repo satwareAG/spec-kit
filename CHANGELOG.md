@@ -2,6 +2,20 @@
 
 <!-- insert new changelog below this comment -->
 
+## [satware-0.13.0] - 2026-07-19
+
+### Changed
+
+- chore: sync fork with upstream v0.13.0 (integrates v0.12.18 – v0.13.0)
+- fix(auth): Azure DevOps az-CLI token acquisition returns None on undecodable output (#3527)
+- feat(extensions): add assess idea assessment pipeline extension (#3568)
+- fix(bundle): surface a clean BundlerError on a malformed bundle download URL (#3586)
+- Add OKF Knowledge Bundle Generator extension to community catalog (#3585)
+- Update Autonomous Run Governance preset to v0.2.2 (#3584)
+- fix(presets): raise PresetValidationError, not raw ValueError, on malformed catalog URL (#3576)
+- chore(ipadp): bump `specs/metadata.json` version -> 0.13.0,
+  `fork_version` -> satware-v0.13.0
+
 ## [satware-0.12.17] - 2026-07-17
 
 ### Changed
@@ -46,6 +60,36 @@
 ### Changed
 
 - chore: sync fork with upstream v0.8.0
+
+## [0.13.0] - 2026-07-17
+
+### Changed
+
+- fix(auth): Azure DevOps az-CLI token acquisition returns None on undecodable output (#3527)
+- feat(extensions): add assess idea assessment pipeline extension (#3568)
+- fix(bundle): surface a clean BundlerError on a malformed bundle download URL (#3586)
+- Add OKF Knowledge Bundle Generator extension to community catalog (#3585)
+- Update Autonomous Run Governance preset to v0.2.2 (#3584)
+- docs: update extension guide PyPI upgrade guidance (#3578)
+- fix(presets): raise PresetValidationError, not raw ValueError, on malformed catalog URL (#3576)
+- chore(deps): bump github/codeql-action/init from 4.36.2 to 4.37.1 (#3571)
+- docs: align README hero tagline and subtitle with docs/index.md (#3581)
+- chore: release 0.12.18, begin 0.12.19.dev0 development (#3583)
+
+## [0.12.18] - 2026-07-17
+
+### Changed
+
+- chore(deps): bump actions/setup-dotnet from 5.4.0 to 6.0.0 (#3574)
+- chore(deps): bump actions/stale from 10.3.0 to 10.4.0 (#3572)
+- chore(deps): bump actions/setup-node from 6.4.0 to 7.0.0 (#3570)
+- docs: weave harness/SDLC framing into landing page (#3567)
+- docs: reframe SDD positioning, modernize install, and de-duplicate walkthroughs (#3565)
+- docs: document extensions.yml hook configuration (#3563)
+- docs: refresh landing page ecosystem stats (#3561)
+- [extension] Add Dotdog extension to community catalog (#3558)
+- Update DocGuard — CDD Enforcement to v0.33.0 (#3559)
+- chore: release 0.12.17, begin 0.12.18.dev0 development (#3560)
 
 ## [0.12.17] - 2026-07-16
 
