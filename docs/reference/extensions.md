@@ -178,6 +178,7 @@ Spec Kit stores project-level extension registration and hook configuration in:
 ```text
 .specify/extensions.yml
 ```
+
 The file contains installed extensions, global settings, and hooks that are surfaced before or after Spec Kit commands.
 
 ```yaml
@@ -225,6 +226,7 @@ Each hook entry supports the following fields:
 | `prompt` | Message shown when asking whether to run an optional hook. |
 | `description` | Human-readable explanation of what the hook does. |
 | `condition` | Optional expression evaluated by `HookExecutor` (using `config.<path>` or `env.<VAR>` with `is set`, `==`, or `!=`). Current command templates do not evaluate conditions and skip hooks with a non-empty condition. |
+
 Hook event names identify when a hook is invoked. They generally use `before_<command>` or `after_<command>`, such as `before_implement`, `after_implement`, `before_tasks`, and `after_tasks`.
 
 `HookExecutor.get_hooks_for_event()` returns hooks ordered by `priority`, with lower values first. However, current command templates read hook lists directly and surface them in their configured YAML order rather than using priority ordering.

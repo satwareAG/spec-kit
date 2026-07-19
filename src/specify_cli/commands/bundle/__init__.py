@@ -826,7 +826,7 @@ def _require_https(label: str, url: str) -> None:
         raise BundlerError(
             f"Refusing to download {label} over non-HTTPS URL: {url}"
         )
-    if not parsed.hostname:
+    if not hostname:
         raise BundlerError(f"Refusing to download {label} from URL with no host: {url}")
 
 
