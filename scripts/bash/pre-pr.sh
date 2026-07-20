@@ -22,7 +22,7 @@ fail=0
 
 # 1. Ruff lint (matches CI: uvx ruff check src/)
 echo ""
-echo "[1/4] ruff check src/..."
+echo "[1/5] ruff check src/..."
 if uvx --from "ruff>=0.14" ruff check "$REPO_ROOT/src/"; then
     echo "   ruff passed"
 else
@@ -32,7 +32,7 @@ fi
 
 # 2. Integration tests (stop on first failure, quiet)
 echo ""
-echo "[2/4] pytest tests/integrations/ ..."
+echo "[2/5] pytest tests/integrations/ ..."
 if (cd "$REPO_ROOT" && uv run pytest tests/integrations/ -x -q --no-header); then
     echo "   tests passed"
 else
@@ -42,7 +42,7 @@ fi
 
 # 3. Privacy leak check
 echo ""
-echo "[3/4] check-privacy-leaks.sh..."
+echo "[3/5] check-privacy-leaks.sh..."
 if "$REPO_ROOT/scripts/bash/check-privacy-leaks.sh" "$REPO_ROOT"; then
     echo "   privacy check passed"
 else
@@ -52,12 +52,28 @@ fi
 
 # 4. Upstream sync check
 echo ""
-echo "[4/4] check-upstream-sync.sh..."
+echo "[4/5] check-upstream-sync.sh..."
 if "$REPO_ROOT/scripts/bash/check-upstream-sync.sh"; then
     echo "   upstream-sync check completed"
 else
     echo "   upstream-sync check reported issues (non-fatal)"
     # Non-fatal: upstream sync warnings don't block PRs
+fi
+
+# 5. Tool provenance: system `specify` must be the satwareAG fork at a release tag
+#    (rules/tool.provenance.md in the satware harness). Fatal: a stale upstream
+#    or editable install silently shadowing the fork is a real bug class.
+echo ""
+echo "[5/5] check-speckit-cli.sh (tool provenance)..."
+if [ -n "${SATWARE_HARNESS:-}" ] && [ -x "$SATWARE_HARNESS/scripts/check-speckit-cli.sh" ]; then
+    if "$SATWARE_HARNESS/scripts/check-speckit-cli.sh"; then
+        echo "   provenance check passed"
+    else
+        echo "   provenance check FAILED"
+        fail=1
+    fi
+else
+    echo "   skipped (SATWARE_HARNESS not set or check-speckit-cli.sh not found)"
 fi
 
 echo ""
