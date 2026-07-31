@@ -22,7 +22,7 @@ fail=0
 
 # 1. Ruff lint (matches CI: uvx ruff@0.15.0 check src tests)
 echo ""
-echo "[1/5] ruff check src/..."
+echo "[1/5] ruff check src/ tests/..."
 if uvx ruff@0.15.0 check "$REPO_ROOT/src/" "$REPO_ROOT/tests/"; then
     echo "   ruff passed"
 else

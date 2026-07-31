@@ -103,16 +103,14 @@ class TestForkAgentParity:
         assert result.exit_code == 0, f"init failed for {key}: {result.output}"
 
         # Dual-mode integrations (e.g., bob since upstream v0.15.0) default
-        # to skills layout on a fresh project; the output directory then is
-        # <folder>/skills, not registrar_config["dir"] (the legacy commands
-        # dir).
+        # to skills layout on a fresh project.  When the integration is in
+        # skills mode but its registrar_config["extension"] is NOT
+        # "/SKILL.md", the main registrar_config["dir"] points to the legacy
+        # commands dir; the actual output goes to <folder>/skills.
         expected_dir = integration.registrar_config["dir"]
         if hasattr(integration, "is_skills_mode"):
-            try:
-                skills = integration.is_skills_mode(None, project)
-            except Exception:
-                skills = False
-            if skills:
+            if integration.is_skills_mode(None, project) and \
+                    integration.registrar_config.get("extension") != "/SKILL.md":
                 expected_dir = integration.config["folder"].rstrip("/") + "/skills"
         commands_dir = project / expected_dir
         assert commands_dir.exists(), (
