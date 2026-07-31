@@ -102,7 +102,19 @@ class TestForkAgentParity:
 
         assert result.exit_code == 0, f"init failed for {key}: {result.output}"
 
-        commands_dir = project / integration.registrar_config["dir"]
+        # Dual-mode integrations (e.g., bob since upstream v0.15.0) default
+        # to skills layout on a fresh project; the output directory then is
+        # <folder>/skills, not registrar_config["dir"] (the legacy commands
+        # dir).
+        expected_dir = integration.registrar_config["dir"]
+        if hasattr(integration, "is_skills_mode"):
+            try:
+                skills = integration.is_skills_mode(None, project)
+            except Exception:
+                skills = False
+            if skills:
+                expected_dir = integration.config["folder"].rstrip("/") + "/skills"
+        commands_dir = project / expected_dir
         assert commands_dir.exists(), (
             f"{key}: expected commands dir {commands_dir} not created"
         )

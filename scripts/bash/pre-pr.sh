@@ -20,10 +20,10 @@ date
 
 fail=0
 
-# 1. Ruff lint (matches CI: uvx ruff check src/)
+# 1. Ruff lint (matches CI: uvx ruff@0.15.0 check src tests)
 echo ""
 echo "[1/5] ruff check src/..."
-if uvx --from "ruff>=0.14" ruff check "$REPO_ROOT/src/"; then
+if uvx ruff@0.15.0 check "$REPO_ROOT/src/" "$REPO_ROOT/tests/"; then
     echo "   ruff passed"
 else
     echo "   ruff FAILED"
