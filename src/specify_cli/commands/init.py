@@ -86,7 +86,7 @@ def register(app: typer.Typer) -> None:
             help="Name for your new project directory (optional if using --here, or use '.' for current directory)",
         ),
         script_type: str = typer.Option(
-            None, "--script", help="Script type to use: sh or ps"
+            None, "--script", help="Script type to use: sh, ps, or py"
         ),
         ignore_agent_tools: bool = typer.Option(
             False,
@@ -183,6 +183,7 @@ def register(app: typer.Typer) -> None:
             save_init_options,
         )
         from ..integration_runtime import (
+            invoke_prefix_for_integration as _invoke_prefix_for_integration,
             with_integration_setting as _with_integration_setting,
         )
         from ..integrations._commands import (
@@ -442,12 +443,20 @@ def register(app: typer.Typer) -> None:
                     if extra:
                         integration_parsed_options.update(extra)
 
+                from ..events import resolve_events
+                events_map = resolve_events(
+                    resolved_integration.key,
+                    resolved_integration.config,
+                    project_path,
+                    integration_parsed_options or None,
+                )
                 resolved_integration.setup(
                     project_path,
                     manifest,
                     parsed_options=integration_parsed_options or None,
                     script_type=selected_script,
                     raw_options=integration_options,
+                    events=events_map,
                 )
                 manifest.save()
 
@@ -458,6 +467,7 @@ def register(app: typer.Typer) -> None:
                     script_type=selected_script,
                     raw_options=integration_options,
                     parsed_options=integration_parsed_options or None,
+                    project_root=project_path,
                 )
                 _write_integration_json(
                     project_path,
@@ -478,7 +488,13 @@ def register(app: typer.Typer) -> None:
                     tracker=tracker,
                     force=force,
                     invoke_separator=resolved_integration.effective_invoke_separator(
-                        integration_parsed_options
+                        integration_parsed_options, project_root=project_path
+                    ),
+                    invoke_prefix=_invoke_prefix_for_integration(
+                        resolved_integration,
+                        resolved_integration.key,
+                        integration_parsed_options,
+                        project_path,
                     ),
                 )
                 tracker.complete(
@@ -532,10 +548,8 @@ def register(app: typer.Typer) -> None:
                     "feature_numbering": "sequential",
                     "speckit_version": get_speckit_version(),
                 }
-                from ..integrations.base import SkillsIntegration as _SkillsPersist
-
-                if isinstance(resolved_integration, _SkillsPersist) or getattr(
-                    resolved_integration, "_skills_mode", False
+                if resolved_integration.is_skills_mode(
+                    integration_parsed_options or None, project_root=project_path
                 ):
                     init_opts["ai_skills"] = True
                 save_init_options(project_path, init_opts)
@@ -683,11 +697,9 @@ def register(app: typer.Typer) -> None:
             steps_lines.append("1. You're already in the project directory!")
             step_num = 2
 
-        from ..integrations.base import SkillsIntegration as _SkillsInt
-
-        _is_skills_integration = isinstance(
-            resolved_integration, _SkillsInt
-        ) or getattr(resolved_integration, "_skills_mode", False)
+        _is_skills_integration = resolved_integration.is_skills_mode(
+            integration_parsed_options or None, project_root=project_path
+        )
 
         codex_skill_mode = selected_ai == "codex" and _is_skills_integration
         zcode_skill_mode = selected_ai == "zcode" and _is_skills_integration
@@ -703,6 +715,8 @@ def register(app: typer.Typer) -> None:
         zed_skill_mode = selected_ai == "zed" and _is_skills_integration
         grok_skill_mode = selected_ai == "grok" and _is_skills_integration
         cline_skill_mode = selected_ai == "cline"
+        forge_skill_mode = selected_ai == "forge"
+        bob_skill_mode = selected_ai == "bob" and _is_skills_integration
         native_skill_mode = (
             codex_skill_mode
             or zcode_skill_mode
@@ -715,6 +729,7 @@ def register(app: typer.Typer) -> None:
             or devin_skill_mode
             or zed_skill_mode
             or grok_skill_mode
+            or bob_skill_mode
         )
 
         if codex_skill_mode:
@@ -752,6 +767,11 @@ def register(app: typer.Typer) -> None:
                 f"{step_num}. Start Grok Build in this project directory; spec-kit skills were installed to [cyan].grok/skills[/cyan]"
             )
             step_num += 1
+        if bob_skill_mode:
+            steps_lines.append(
+                f"{step_num}. Start Bob in this project directory; spec-kit skills were installed to [cyan].bob/skills[/cyan]"
+            )
+            step_num += 1
         usage_label = "skills" if native_skill_mode else "slash commands"
 
         from .._invocation_style import (
@@ -772,6 +792,7 @@ def register(app: typer.Typer) -> None:
             if (
                 _is_slash_skills_agent(selected_ai, _ai_skills_enabled)
                 or cline_skill_mode
+                or forge_skill_mode
             ):
                 return f"/speckit-{name}"
             return f"/speckit.{name}"
