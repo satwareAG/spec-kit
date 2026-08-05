@@ -25,6 +25,7 @@ The following community-contributed extensions are available in [`catalog.commun
 
 | Extension | Purpose | Category | Effect | URL |
 |-----------|---------|----------|--------|-----|
+| adrkit — decision memory for spec-driven development | Pulls the decisions governing this work into agent context, checks produced plans against them, and drafts an ADR from a plan artifact | `process` | Read+Write | [adrkit](https://github.com/mbeacom/adrkit) |
 | Agent Assign | Assign specialized Claude Code agents to spec-kit tasks for targeted execution | `process` | Read+Write | [spec-kit-agent-assign](https://github.com/xymelon/spec-kit-agent-assign) |
 | Agent Governance | Generate agent-platform repository governance files from Spec Kit metadata | `process` | Read+Write | [spec-kit-agent-governance](https://github.com/bigsmartben/spec-kit-agent-governance) |
 | AI-Driven Engineering (AIDE) | A structured 7-step workflow for building new projects from scratch with AI assistants — from vision through implementation | `process` | Read+Write | [aide](https://github.com/mnriem/spec-kit-extensions/tree/main/aide) |
@@ -50,6 +51,7 @@ The following community-contributed extensions are available in [`catalog.commun
 | Coding Standards Drift Control | Generate coding-standards drift reports and remediation tasks for active Spec Kit features | `code` | Read+Write | [spec-kit-coding-standards-drift-control](https://github.com/benizzio/spec-kit-coding-standards-drift-control) |
 | Conduct Extension | Orchestrates spec-kit phases via sub-agent delegation to reduce context pollution. | `process` | Read+Write | [spec-kit-conduct-ext](https://github.com/twbrandon7/spec-kit-conduct-ext) |
 | Confluence Extension | Create a doc in Confluence summarizing the specifications and planning files | `integration` | Read+Write | [spec-kit-confluence](https://github.com/aaronrsun/spec-kit-confluence) |
+| ContextForge MCP | Integrates codebase-memory-mcp + headroom into Spec Kit — graph-based code intelligence and context compression for the implement phase | `code` | Read+Write | [contextforge-mcp](https://github.com/capatinore/contextforge-mcp) |
 | Cost Tracker | Track real LLM dollar cost across SDD workflows — per-feature budgets, per-integration comparison, and finance-ready exports | `visibility` | Read+Write | [spec-kit-cost](https://github.com/Quratulain-bilal/spec-kit-cost) |
 | Data Model Diagram | Generates Mermaid ER diagrams from Spec Kit data models after planning | `docs` | Read+Write | [spec-kit-data-model-diagram](https://github.com/benizzio/spec-kit-data-model-diagram) |
 | DocGuard — CDD Enforcement | The only doc-integrity engine with an MCP server, SARIF/JUnit output, and a deterministic zero-LLM core. Validates, scores, and traces documentation against code — 27 validators, stable finding codes, adoption baseline for legacy repos, compliance-evidence reports, GitHub Action with PR annotations, spec-kit hooks. Pure Node.js, one pinned dep. | `docs` | Read+Write | [spec-kit-docguard](https://github.com/raccioly/docguard) |

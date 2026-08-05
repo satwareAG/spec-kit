@@ -20,7 +20,7 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Set
 
 import pathspec
 import yaml
@@ -29,11 +29,14 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 
 from .._assets import _locate_core_pack, _repo_root
 from .._download_security import (
+    archive_format_from_name,
+    archive_suffix,
     MAX_JSON_CATALOG_BYTES,
     build_safe_download_path,
+    detect_archive_format,
     is_https_or_localhost_http,
     read_response_limited,
-    safe_extract_zip,
+    safe_extract_archive,
 )
 from .._init_options import is_ai_skills_enabled
 from .._invocation_style import is_dollar_skills_agent, is_slash_skills_agent
@@ -282,9 +285,25 @@ class ExtensionManifest:
             raise ValidationError(
                 f"Invalid extension: expected a mapping, got {type(ext).__name__}"
             )
+        # Check presence AND type: the format/version checks below feed these
+        # values straight to ``re.match`` and ``packaging.Version``, both of
+        # which raise a bare TypeError on a non-string. YAML makes that an easy
+        # authoring slip -- unquoted ``version: 1.0`` parses as a float and
+        # ``id: 2`` as an int -- and TypeError is not a ValidationError, so it
+        # escapes every caller that already handles a malformed manifest (see
+        # list_installed()'s "Corrupted extension" fallback, which catches
+        # ValidationError only, making one bad extension exit ``specify
+        # extension list`` with a raw traceback and hide the healthy ones).
+        # Mirrors the sibling IntegrationDescriptor, which already type-checks
+        # the same four fields.
         for field in ["id", "name", "version", "description"]:
             if field not in ext:
                 raise ValidationError(f"Missing extension.{field}")
+            if not isinstance(ext[field], str):
+                raise ValidationError(
+                    f"Invalid extension.{field}: expected a string, "
+                    f"got {type(ext[field]).__name__}"
+                )
 
         # Validate extension ID format
         if not re.match(r"^[a-z0-9-]+$", ext["id"]):
@@ -388,6 +407,16 @@ class ExtensionManifest:
                 )
             if "name" not in cmd or "file" not in cmd:
                 raise ValidationError("Command missing 'name' or 'file'")
+            # The pattern match below would raise a bare TypeError on a
+            # non-string name (``name: 2``), escaping the ValidationError
+            # contract. The 'file' field needs no check here:
+            # relative_extension_path_violation() below already rejects a
+            # non-string value.
+            if not isinstance(cmd["name"], str):
+                raise ValidationError(
+                    f"Invalid command name: expected a string, "
+                    f"got {type(cmd['name']).__name__}"
+                )
 
             # Validate the 'file' field at manifest-load time using the single
             # shared policy in relative_extension_path_violation(), so manifest
@@ -560,14 +589,25 @@ class ExtensionManifest:
         return self.data.get("provides", {}).get("commands", [])
 
     @property
+    def config(self) -> List[Dict[str, Any]]:
+        """Get list of provided config templates, normalized to dictionaries."""
+        raw = self.data.get("provides", {}).get("config", [])
+        if not isinstance(raw, list) or not all(isinstance(entry, dict) for entry in raw):
+            return []
+        return raw
+
+    @property
     def hooks(self) -> Dict[str, Any]:
         """Get hook definitions."""
         return self.data.get("hooks", {})
 
     def get_hash(self) -> str:
         """Calculate SHA256 hash of manifest file."""
+        h = hashlib.sha256()
         with open(self.path, "rb") as f:
-            return f"sha256:{hashlib.sha256(f.read()).hexdigest()}"
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+        return f"sha256:{h.hexdigest()}"
 
 
 class ExtensionRegistry:
@@ -2400,7 +2440,7 @@ class ExtensionManager:
                 pass  # Best-effort; install already committed to the registry.
 
         # Restore execute bits on shipped POSIX scripts. copytree here (and the
-        # zipfile.extractall in install_from_zip, which delegates to this method) does
+        # archive extraction in install_from_archive, which delegates here, does
         # not restore a stripped Unix mode, so a bundled *.sh would land non-executable
         # and a documented `.specify/extensions/<id>/scripts/...` invocation would fail
         # with "Permission denied". This is the single sink every install route funnels
@@ -2419,21 +2459,27 @@ class ExtensionManager:
 
         return manifest
 
-    def install_from_zip(
+    def install_from_archive(
         self,
-        zip_path: Path,
+        archive_path: Path,
         speckit_version: str,
         priority: int = 10,
         force: bool = False,
+        *,
+        archive_file: BinaryIO | None = None,
+        source_name: str | None = None,
+        content_type: str | None = None,
     ) -> ExtensionManifest:
-        """Install extension from ZIP file.
+        """Install an extension from a supported archive.
 
         Args:
-            zip_path: Path to extension ZIP file
+            archive_path: Path to a .zip, .tar.gz, or .tgz archive
             speckit_version: Current spec-kit version
             priority: Resolution priority (lower = higher precedence, default 10)
             force: If True and extension is already installed, remove it first
                    before proceeding with installation
+            archive_file: Already-open archive stream to consume instead of
+                          reopening ``zip_path``
 
         Returns:
             Installed extension manifest
@@ -2449,7 +2495,14 @@ class ExtensionManager:
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
 
-            safe_extract_zip(zip_path, temp_path, error_type=ValidationError)
+            safe_extract_archive(
+                archive_path,
+                temp_path,
+                archive_file=archive_file,
+                source_name=source_name,
+                content_type=content_type,
+                error_type=ValidationError,
+            )
 
             # Find extension directory (may be nested)
             extension_dir = temp_path
@@ -2463,12 +2516,177 @@ class ExtensionManager:
                     manifest_path = extension_dir / "extension.yml"
 
             if not manifest_path.exists():
-                raise ValidationError("No extension.yml found in ZIP file")
+                raise ValidationError("No extension.yml found in archive")
 
             # Install from extracted directory
             return self.install_from_directory(
                 extension_dir, speckit_version, priority=priority, force=force
             )
+
+    def _config_root_is_contained(self, specify_dir: Path) -> bool:
+        """Report whether `.specify` is a real directory inside the project.
+
+        Checked component by component so a symlink anywhere on the path is
+        rejected before it becomes the containment root. A missing `.specify`
+        is fine: scaffolding creates it under the project root.
+        """
+        try:
+            root = self.project_root.resolve()
+        except OSError:
+            return False
+        current = self.project_root
+        for part in specify_dir.relative_to(self.project_root).parts:
+            current = current / part
+            if current.is_symlink():
+                return False
+            if not current.exists():
+                return True
+            try:
+                if current.resolve().relative_to(root) is None:
+                    return False
+            except (OSError, ValueError):
+                return False
+        return current.is_dir()
+
+    @staticmethod
+    def _target_follows_preserved_convention(target_name: str) -> bool:
+        """True when a scaffold target survives remove/backup/restore.
+
+        Those paths only handle top-level ``*-config.yml`` and
+        ``*-config.local.yml`` files, so anything nested or otherwise named is
+        not preserved across an update.
+        """
+        if "/" in target_name or "\\" in target_name:
+            return False
+        return target_name.endswith("-config.yml") or target_name.endswith(
+            "-config.local.yml"
+        )
+
+    def scaffold_config(self, extension_id: str) -> tuple[List[str], List[str], List[str]]:
+        """Deploy config templates from an installed extension to the project.
+
+        Reads the extension's manifest provides.config section and copies
+        each config template to the project's .specify/ directory. Existing
+        config files are never overwritten (user customizations are preserved).
+
+        Args:
+            extension_id: ID of the installed extension
+
+        Returns:
+            Tuple of (deployed, skipped_existing, failed) where each is a list
+            of config file names.
+        """
+        ext_dir = self.extensions_dir / extension_id
+        manifest_path = ext_dir / "extension.yml"
+        if not manifest_path.exists():
+            return [], [], []
+
+        manifest = ExtensionManifest(manifest_path)
+        deployed = []
+        skipped_existing = []
+        failed = []
+
+        provides = manifest.data.get("provides", {})
+        raw_config = provides.get("config", [])
+        config_is_malformed = (
+            "config" in provides
+            and (
+                not isinstance(raw_config, list)
+                or not all(isinstance(entry, dict) for entry in raw_config)
+            )
+        )
+        if config_is_malformed:
+            return deployed, skipped_existing, ["provides.config"]
+
+        ext_dir_resolved = ext_dir.resolve()
+        # Config is deployed beneath the extension's own directory because that
+        # is where it is read from: ConfigManager._get_project_config() loads
+        # `.specify/extensions/<id>/<id>-config.yml`, and the bundled scripts
+        # and READMEs use the same location. Writing to `.specify/<name>` put
+        # the file somewhere nothing ever looks.
+        config_dir = self.project_root / ".specify" / "extensions" / extension_id
+        # Resolving that directory and trusting the result as the containment
+        # root lets a symlinked component point outside the project: every
+        # target would then satisfy relative_to and copy2 would write
+        # externally. Refuse a symlinked component up front, matching the
+        # project safe-write path in shared_infra.
+        if not self._config_root_is_contained(config_dir):
+            return deployed, skipped_existing, ["provides.config"]
+        config_dir_resolved = config_dir.resolve()
+
+        for config_entry in manifest.config:
+            template_name = config_entry.get("template", "")
+            target_name = config_entry.get("name", template_name)
+            failure_name = target_name if isinstance(target_name, str) and target_name else "provides.config"
+            if not isinstance(template_name, str) or not template_name:
+                failed.append(failure_name)
+                continue
+            if not isinstance(target_name, str) or not target_name:
+                failed.append(failure_name)
+                continue
+            # Only scaffold what removal actually preserves. remove(keep_config)
+            # keeps top-level files ending in -config.yml / -config.local.yml and
+            # rmtree's every subdirectory; the backup path globs the same
+            # top-level pattern. A nested or differently-named target would be
+            # silently destroyed by `extension add --force` and replaced with the
+            # template default, losing the user's customization.
+            if not self._target_follows_preserved_convention(target_name):
+                failed.append(failure_name)
+                continue
+
+            template_candidate = ext_dir / template_name
+            template_path = template_candidate.resolve()
+            target_path = (config_dir / target_name).resolve()
+            try:
+                template_path.relative_to(ext_dir_resolved)
+                target_path.relative_to(config_dir_resolved)
+            except ValueError:
+                failed.append(failure_name)
+                continue
+
+            if template_candidate.is_symlink() or not template_path.is_file():
+                failed.append(failure_name)
+                continue
+
+            if target_path.exists():
+                skipped_existing.append(target_name)
+                continue
+
+            try:
+                # mkdir belongs inside the handler: a nested target like
+                # foo/config.yml must land in `failed` when `.specify/foo` is a
+                # file or cannot be created, not raise out of scaffolding after
+                # `extension add` has already installed the extension.
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(template_path, target_path)
+            except OSError:
+                failed.append(target_name)
+                continue
+            deployed.append(target_name)
+
+        return deployed, skipped_existing, failed
+
+    def install_from_zip(
+        self,
+        zip_path: Path,
+        speckit_version: str,
+        priority: int = 10,
+        force: bool = False,
+        *,
+        archive_file: BinaryIO | None = None,
+        source_name: str | None = None,
+        content_type: str | None = None,
+    ) -> ExtensionManifest:
+        """Backward-compatible wrapper for archive installation."""
+        return self.install_from_archive(
+            zip_path,
+            speckit_version,
+            priority=priority,
+            force=force,
+            archive_file=archive_file,
+            source_name=source_name,
+            content_type=content_type,
+        )
 
     def remove(self, extension_id: str, keep_config: bool = False) -> bool:
         """Remove an installed extension.
@@ -3787,14 +4005,14 @@ class ExtensionCatalog(CatalogStackBase):
     def download_extension(
         self, extension_id: str, target_dir: Optional[Path] = None
     ) -> Path:
-        """Download extension ZIP from catalog.
+        """Download an extension archive from a catalog.
 
         Args:
             extension_id: ID of the extension to download
-            target_dir: Directory to save ZIP file (defaults to temp directory)
+            target_dir: Directory to save the archive
 
         Returns:
-            Path to downloaded ZIP file
+            Path to the downloaded archive
 
         Raises:
             ExtensionError: If extension not found or download fails
@@ -3853,45 +4071,88 @@ class ExtensionCatalog(CatalogStackBase):
             target_dir = self.cache_dir / "downloads"
         target_dir = Path(target_dir)
         version = ext_info.get("version", "unknown")
-        zip_path = build_safe_download_path(
+        declared_format = archive_format_from_name(download_url)
+        build_safe_download_path(
             target_dir,
             extension_id,
             version,
             error_type=ExtensionError,
             label="extension",
+            suffix=archive_suffix(declared_format or "tar.gz"),
         )
         target_dir.mkdir(parents=True, exist_ok=True)
 
+        original_download_url = download_url
         extra_headers = None
         resolved_download_url = self._resolve_github_release_asset_api_url(download_url)
         if resolved_download_url:
             download_url = resolved_download_url
             extra_headers = {"Accept": "application/octet-stream"}
 
-        # Download the ZIP file
+        staging_path: Path | None = None
         try:
             with self._open_url(
                 download_url, timeout=60, extra_headers=extra_headers
             ) as response:
-                zip_data = read_response_limited(
+                archive_data = read_response_limited(
                     response,
                     error_type=ExtensionError,
                     label=f"extension '{extension_id}' download",
                 )
+                final_url = (
+                    response.geturl()
+                    if hasattr(response, "geturl")
+                    else download_url
+                )
+                content_type = (
+                    response.getheader("Content-Type")
+                    if hasattr(response, "getheader")
+                    else None
+                )
 
             verify_archive_sha256(
-                zip_data, ext_info.get("sha256"), extension_id, ExtensionError
+                archive_data, ext_info.get("sha256"), extension_id, ExtensionError
             )
 
-            zip_path.write_bytes(zip_data)
-            return zip_path
+            with tempfile.NamedTemporaryFile(
+                prefix="extension-download-",
+                suffix=".archive",
+                dir=target_dir,
+                delete=False,
+            ) as staging_file:
+                staging_path = Path(staging_file.name)
+                staging_file.write(archive_data)
+            archive_format = detect_archive_format(
+                staging_path,
+                source_name=(
+                    final_url
+                    if archive_format_from_name(final_url) is not None
+                    else original_download_url
+                ),
+                content_type=content_type,
+                error_type=ExtensionError,
+            )
+            archive_path = build_safe_download_path(
+                target_dir,
+                extension_id,
+                version,
+                error_type=ExtensionError,
+                label="extension",
+                suffix=archive_suffix(archive_format),
+            )
+            os.replace(staging_path, archive_path)
+            staging_path = None
+            return archive_path
 
         except urllib.error.URLError as e:
             raise ExtensionError(
                 f"Failed to download extension from {download_url}: {e}"
             )
         except IOError as e:
-            raise ExtensionError(f"Failed to save extension ZIP: {e}")
+            raise ExtensionError(f"Failed to save extension archive: {e}")
+        finally:
+            if staging_path is not None:
+                staging_path.unlink(missing_ok=True)
 
     def clear_cache(self):
         """Clear the catalog cache (both legacy and URL-hash-based files)."""
