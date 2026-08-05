@@ -164,6 +164,13 @@ class TestCollectExtensionEvents:
         (ext_dir / "extension.yml").write_text("invalid: - - -", encoding="utf-8")
         assert collect_extension_events(tmp_path) == {}
 
+    def test_non_utf8_manifest_skipped(self, tmp_path):
+        ext_dir = tmp_path / ".specify" / "extensions" / "my-ext"
+        ext_dir.mkdir(parents=True)
+        (ext_dir / "extension.yml").write_bytes(b"\xff\xfe")
+
+        assert collect_extension_events(tmp_path) == {}
+
     def test_event_command_ref_canonicalized_via_manifest(self, tmp_path):
         """R1: events are read from a validated ExtensionManifest, so an
         obsolete command ref (e.g. my-ext.boot) is canonicalized
@@ -1410,6 +1417,19 @@ class TestTeardownDataSafety:
         )
         # User content preserved verbatim — not reset to {}.
         assert config_path.read_text() == jsonc
+
+    def test_unreadable_config_not_overwritten_on_merge(self, tmp_path):
+        """An unreadable user config aborts the merge instead of crashing."""
+        integration = ClaudeIntegration()
+        config_path = tmp_path / ".claude/settings.json"
+        config_path.mkdir(parents=True)
+
+        install_integration_events(
+            integration, tmp_path, _claude_manifest(tmp_path),
+            {"pre_tool_use": [{"command": "speckit.tdd.validate"}]},
+        )
+
+        assert config_path.is_dir()
 
     def test_jsonc_opencode_config_not_reset(self, tmp_path):
         """#23: a malformed opencode.json is preserved, not reset to {}."""

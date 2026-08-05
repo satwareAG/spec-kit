@@ -2,6 +2,56 @@
 
 <!-- insert new changelog below this comment -->
 
+## [0.15.2] - 2026-08-03
+
+### Changed
+
+- fix(presets): restore core skills instead of deleting them on preset remove (#3929)
+- fix(manifests): reject non-string metadata instead of crashing on it (#3943)
+- fix: narrow bare except Exception in invoke separator resolution (#3856)
+- fix(workflows): keep the init step's documented ignore_agent_tools default on an explicit null (#3889)
+- fix(kimi): preserve non-UTF-8 user skills (#3895)
+- fix(presets): tolerate non-UTF-8 legacy commands (#3896)
+- feat: allow overriding default init integration via SPECKIT_INTEGRATION_DEFAULT (#3952)
+- Add adrkit extension to community catalog (#3947)
+- feat(extensions): scaffold config templates on extension add/enable (#2000)
+- fix(events): skip non-UTF-8 extension manifests (#3900)
+- fix(workflows): fail a gate whose on_reject is not abort/skip/retry (#3888)
+- fix(presets): validate required manifest mappings (#3898)
+- fix: eliminate TOCTOU race in zip packaging (#3855)
+- fix(workflows): fail a fan-in step whose output is not a mapping (#3887)
+- fix(workflows): refetch non-UTF-8 catalog caches (#3901)
+- fix(bundler): wrap local catalog decode failures (#3902)
+- Add `--extension` flag to `specify init` for opting into extensions at init time (#3914)
+- fix: bound response reads in extension catalog and download (#3775)
+- fix(workflows): reject a retry gate whose verdict enum forbids the reset value (#3912)
+- chore: release 0.15.1, begin 0.15.2.dev0 development (#3913)
+
+## [0.15.1] - 2026-07-31
+
+### Changed
+
+- fix: escape Rich markup in `workflow resolve` output (#3879)
+- chore(deps): bump actions/stale from 10.4.0 to 11.0.0 (#3877)
+- chore(deps): bump actions/setup-python from 6.3.0 to 7.0.0 (#3876)
+- feat: support tar archives for installs (#3874)
+- fix: eliminate TOCTOU race in file unlink calls (#3819)
+- fix(scripts): tolerate an unusable integration.json in the Python helper (#3785)
+- fix(catalogs): validate the port in the shared catalog-URL validator, like its mirrors do (#3804)
+- feat(presets): add opt-in constitution-sync preset (#3873)
+- fix: reject non-object workflow caches (#3860)
+- Harden extension URL download cache against symlink and junction races (#3869)
+- fix: escape workflow step metadata (#3863)
+- [bug-fix] Fix bundle-update-force-mislead: add refresh() to DefaultPrimitiveInstaller (#3452)
+- fix: use chunked read for extension manifest hash (#3841)
+- fix: preserve unreadable event config files (#3861)
+- fix(scripts): use a .NET Framework-safe trim in the PowerShell init-dir resolver (#3872)
+- Add ContextForge MCP extension to community catalog (#3487)
+- fix: normalize non-UTF-8 integration manifests (#3862)
+- feat: bind gate verdict to workflow input via verdict_input (#3725)
+- docs: use absolute image URLs in README for PyPI rendering (#3867)
+- chore: release 0.15.0, begin 0.15.1.dev0 development (#3871)
+
 ## [0.15.0] - 2026-07-30
 
 ### Changed
