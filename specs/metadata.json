@@ -1,7 +1,7 @@
 {
   "name": "spec-kit",
   "version": "0.13.0",
-  "fork_version": "satware-v0.15.2",
+  "fork_version": "satware-v0.16.5",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
@@ -77,5 +77,5 @@
     ],
     "symlink_script": "$SATWARE_HARNESS/scripts/env-setup-symlinks.sh"
   },
-  "project_version": "0.15.2"
+  "project_version": "0.16.5"
 }
