@@ -193,10 +193,15 @@ class TestJunieIntegration(MarkdownIntegrationTests):
         if script_variant == "sh":
             for name in [
                 "check-prerequisites.sh",
+                "check-privacy-leaks.sh",
+                "check-upstream-sync.sh",
                 "common.sh",
                 "create-new-feature.sh",
+                "eod.sh",
+                "pre-pr.sh",
                 "resolve-template.sh",
                 "setup-plan.sh",
+                "sod.sh",
                 "setup-tasks.sh",
             ]:
                 files.append(f".specify/scripts/bash/{name}")
