@@ -1,6 +1,6 @@
 {
   "name": "spec-kit",
-  "version": "0.13.0",
+  "version": "0.16.5",
   "fork_version": "satware-v0.16.5",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
