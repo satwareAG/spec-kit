@@ -366,6 +366,17 @@ def _validate_steps(
 
         # Determine step type
         step_type = step_config.get("type", "command")
+        if not isinstance(step_type, str):
+            # Registry keys are strings. Checking an unhashable YAML value
+            # (for example ``type: [shell]`` or a mapping) against the set
+            # below raises a raw TypeError before validation can report the
+            # authoring mistake. Guard every non-string shape first, matching
+            # the typed validation already applied to workflow and step IDs.
+            errors.append(
+                f"Step {step_id!r}: 'type' must be a string, got "
+                f"{type(step_type).__name__} ({step_type!r})."
+            )
+            continue
         if step_type not in _get_valid_step_types():
             errors.append(
                 f"Step {step_id!r} has invalid type {step_type!r}."
@@ -743,12 +754,13 @@ class RunState:
         cls._validate_run_id(run_id)
         runs_dir = project_root / ".specify" / "workflows" / "runs" / run_id
         state_path = runs_dir / "state.json"
-        if not state_path.exists():
+
+        try:
+            with open(state_path, encoding="utf-8") as f:
+                state_data = json.load(f)
+        except FileNotFoundError:
             msg = f"Run state not found: {state_path}"
             raise FileNotFoundError(msg)
-
-        with open(state_path, encoding="utf-8") as f:
-            state_data = json.load(f)
         if not isinstance(state_data, dict):
             raise ValueError("Invalid run state: expected a JSON object")
         missing_fields = [
@@ -760,6 +772,11 @@ class RunState:
             raise ValueError(
                 "Invalid run state: missing required field(s): "
                 + ", ".join(missing_fields)
+            )
+        if state_data["run_id"] != run_id:
+            raise ValueError(
+                f"Invalid run state: stored run_id {state_data['run_id']!r} "
+                f"does not match requested run_id {run_id!r}"
             )
 
         workflow_id = state_data["workflow_id"]
@@ -1705,8 +1722,13 @@ class WorkflowEngine:
                 continue
             state_path = run_dir / "state.json"
             if state_path.exists():
-                with open(state_path, encoding="utf-8") as f:
-                    state_data = json.load(f)
+                try:
+                    with open(state_path, encoding="utf-8") as f:
+                        state_data = json.load(f)
+                except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+                    continue
+                if not isinstance(state_data, dict) or "run_id" not in state_data:
+                    continue
                 runs.append(state_data)
         return runs
 
