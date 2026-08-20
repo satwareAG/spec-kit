@@ -61,6 +61,13 @@ _FALLBACK_CORE_COMMAND_NAMES = frozenset(
 )
 EXTENSION_COMMAND_NAME_PATTERN = re.compile(r"^speckit\.([a-z0-9-]+)\.([a-z0-9-]+)$")
 
+# Naming pattern for provides.templates / provides.scripts entries. Unlike
+# commands, these are not namespaced (they aren't invoked via a command
+# name), so they follow the same plain slug pattern as extension.id.
+VALID_EXTENSION_ARTIFACT_NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
+
+VALID_SCRIPT_RUNTIMES = frozenset({"bash", "powershell", "python"})
+
 VALID_EFFECTS = frozenset({"read-only", "read-write"})
 
 DEFAULT_HOOK_PRIORITY = 10
@@ -341,6 +348,25 @@ class ExtensionManifest:
             )
         if "speckit_version" not in requires:
             raise ValidationError("Missing requires.speckit_version")
+        # Presence alone is not enough: check_compatibility() feeds this value to
+        # ``SpecifierSet(required)``, guarded only by ``except InvalidSpecifier``,
+        # which a non-string escapes two different ways. A float/int/bool/None
+        # raises TypeError from the constructor, while a list or dict is an
+        # *iterable*, so SpecifierSet accepts it and the failure surfaces much
+        # later as ``AttributeError: 'str' object has no attribute 'filter'`` from
+        # inside .contains(). Neither is a CompatibilityError, so both bypass the
+        # CLI's "Compatibility Error" handler and exit 1 with a raw traceback
+        # naming no field. An unquoted ``speckit_version: 1.0`` is an easy YAML
+        # slip. Mirrors the sibling IntegrationDescriptor, which already requires
+        # a non-empty string here.
+        if (
+            not isinstance(requires["speckit_version"], str)
+            or not requires["speckit_version"].strip()
+        ):
+            raise ValidationError(
+                "Invalid requires.speckit_version: expected a non-empty string, "
+                f"got {type(requires['speckit_version']).__name__}"
+            )
 
         # Validate provides section
         provides = self.data["provides"]
@@ -349,11 +375,17 @@ class ExtensionManifest:
                 f"Invalid provides: expected a mapping, got {type(provides).__name__}"
             )
         commands = provides.get("commands", [])
+        templates = provides.get("templates", [])
+        scripts = provides.get("scripts", [])
         hooks = self.data.get("hooks")
         events = self.data.get("events")
 
         if "commands" in provides and not isinstance(commands, list):
             raise ValidationError("Invalid provides.commands: expected a list")
+        if "templates" in provides and not isinstance(templates, list):
+            raise ValidationError("Invalid provides.templates: expected a list")
+        if "scripts" in provides and not isinstance(scripts, list):
+            raise ValidationError("Invalid provides.scripts: expected a list")
         if "hooks" in self.data and not isinstance(hooks, dict):
             raise ValidationError("Invalid hooks: expected a mapping")
         if "events" in self.data:
@@ -363,9 +395,17 @@ class ExtensionManifest:
         has_commands = bool(commands)
         has_hooks = bool(hooks)
         has_events = bool(events)
+        has_templates = bool(templates)
+        has_scripts = bool(scripts)
 
-        if not has_commands and not has_hooks and not has_events:
-            raise ValidationError("Extension must provide at least one command, hook, or event")
+        if not has_commands and not has_hooks and not has_events and not has_templates and not has_scripts:
+            raise ValidationError(
+                "Extension must provide at least one command, hook, or event "
+                "(or a declared template/script)"
+            )
+
+        self._validate_provided_artifacts(templates, section="templates", singular="template")
+        self._validate_provided_artifacts(scripts, section="scripts", singular="script")
 
         # Validate hook values (if present).
         # Each event is a single mapping or a list of mappings.
@@ -527,6 +567,80 @@ class ExtensionManifest:
                     )
 
     @staticmethod
+    def _validate_provided_artifacts(entries: List[Any], section: str, singular: str) -> None:
+        """Validate provides.templates / provides.scripts entries.
+
+        Mirrors the shape/path-safety checks PresetManifest applies to its
+        non-command templates, minus 'type' (the section name already
+        distinguishes template vs script) and 'strategy' (extension-provided
+        artifacts are always 'replace' -- see the forced-replace resolver
+        behavior for extension layers in presets/__init__.py). A present
+        'strategy' key is rejected rather than silently ignored, so an author
+        who copies a preset-style entry gets a clear error instead of a
+        silently-dropped field. Duplicate names within a section are also
+        rejected: the resolver returns the first matching entry by name
+        (``PresetResolver._extension_manifest_declared_template``), so a
+        later duplicate would be silently unreachable while still being
+        exposed by ``ExtensionManifest.templates``/``.scripts``.
+        """
+        seen_names: set[str] = set()
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValidationError(
+                    f"Each entry in 'provides.{section}' must be a mapping"
+                )
+            if "name" not in entry or "file" not in entry:
+                raise ValidationError(f"{singular.capitalize()} missing 'name' or 'file'")
+
+            name = entry["name"]
+            if not isinstance(name, str):
+                raise ValidationError(
+                    f"Invalid {singular} name: expected a string, got {type(name).__name__}"
+                )
+            if not VALID_EXTENSION_ARTIFACT_NAME_PATTERN.match(name):
+                raise ValidationError(
+                    f"Invalid {singular} name '{name}': "
+                    "must be lowercase alphanumeric with hyphens only"
+                )
+            if name in seen_names:
+                raise ValidationError(
+                    f"Duplicate {singular} name '{name}' in 'provides.{section}'"
+                )
+            seen_names.add(name)
+
+            file_value = entry["file"]
+            reason = relative_extension_path_violation(file_value)
+            if reason:
+                label = repr(file_value) if isinstance(file_value, str) else f"for {singular} '{name}'"
+                raise ValidationError(f"Invalid {singular} 'file' {label}: {reason}")
+
+            if "description" in entry and not isinstance(entry["description"], str):
+                raise ValidationError(
+                    f"Invalid {singular} description for '{name}': expected a string"
+                )
+
+            if "strategy" in entry:
+                raise ValidationError(
+                    f"Invalid {singular} entry '{name}': 'strategy' is not authorable for "
+                    "extension-provided artifacts, which always use 'replace' semantics"
+                )
+
+            if section == "scripts" and "runtimes" in entry:
+                runtimes = entry["runtimes"]
+                if not isinstance(runtimes, list) or not all(
+                    isinstance(r, str) for r in runtimes
+                ):
+                    raise ValidationError(
+                        f"Invalid runtimes for script '{name}': expected a list of strings"
+                    )
+                invalid = sorted(set(runtimes) - VALID_SCRIPT_RUNTIMES)
+                if invalid:
+                    raise ValidationError(
+                        f"Invalid runtimes {invalid} for script '{name}': "
+                        f"must be one of {sorted(VALID_SCRIPT_RUNTIMES)}"
+                    )
+
+    @staticmethod
     def _try_correct_command_name(name: str, ext_id: str) -> Optional[str]:
         """Try to auto-correct a non-conforming command name to the required pattern.
 
@@ -597,6 +711,16 @@ class ExtensionManifest:
         return raw
 
     @property
+    def templates(self) -> List[Dict[str, Any]]:
+        """Get list of declared templates (provides.templates)."""
+        return self.data.get("provides", {}).get("templates", [])
+
+    @property
+    def scripts(self) -> List[Dict[str, Any]]:
+        """Get list of declared scripts (provides.scripts)."""
+        return self.data.get("provides", {}).get("scripts", [])
+
+    @property
     def hooks(self) -> Dict[str, Any]:
         """Get hook definitions."""
         return self.data.get("hooks", {})
@@ -631,6 +755,13 @@ class ExtensionRegistry:
         if not self.registry_path.exists():
             return {"schema_version": self.SCHEMA_VERSION, "extensions": {}}
 
+        # A non-regular file (e.g. a directory at the registry path) is not a
+        # readable registry. Recover to empty so construction — used by the
+        # install/enable/disable flows — does not crash. Resolution paths that
+        # must fail closed consult is_corrupt() instead of relying on this.
+        if not self.registry_path.is_file():
+            return {"schema_version": self.SCHEMA_VERSION, "extensions": {}}
+
         try:
             with open(self.registry_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -641,9 +772,46 @@ class ExtensionRegistry:
             if not isinstance(data.get("extensions"), dict):
                 data["extensions"] = {}
             return data
-        except (json.JSONDecodeError, FileNotFoundError):
-            # Corrupted or missing registry, start fresh
+        except (json.JSONDecodeError, UnicodeDecodeError, FileNotFoundError):
+            # Corrupted or missing registry, start fresh. A registry whose
+            # bytes cannot be decoded as UTF-8 is the same corruption class as
+            # malformed JSON — only the exception type differs, and it is
+            # raised by the text-mode read before JSON parsing begins. OSError
+            # is deliberately not caught: the data may be intact on disk, and
+            # starting fresh would let a later _save() wipe it.
             return {"schema_version": self.SCHEMA_VERSION, "extensions": {}}
+
+    def is_corrupt(self) -> bool:
+        """Report whether an existing registry file is present but unreadable.
+
+        ``_load`` deliberately recovers from a corrupt registry by normalizing
+        it to an empty mapping so install/enable/disable flows keep working.
+        Resolution paths, however, must fail closed: a corrupt registry that
+        normalizes to ``{}`` would otherwise cause every on-disk extension
+        directory to be admitted as an unregistered, enabled extension. This
+        probe lets those callers distinguish "no registry" (safe) from
+        "registry exists but is invalid" (unsafe) without changing recovery
+        behavior. An absent registry returns ``False``; a directory, broken
+        or dangling symlink, non-regular file, unreadable file, non-mapping
+        root, or non-mapping ``extensions`` value returns ``True``.
+        """
+        # os.path.lexists (not Path.exists) so a dangling symlink is detected
+        # rather than followed to a non-existent target and mistaken for an
+        # absent registry — which would reopen the fail-open directory scan.
+        if not os.path.lexists(self.registry_path):
+            return False
+        if not self.registry_path.is_file():
+            return True
+        try:
+            with open(self.registry_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
+            return True
+        if not isinstance(data, dict):
+            return True
+        if "extensions" in data and not isinstance(data["extensions"], dict):
+            return True
+        return False
 
     def _save(self):
         """Save registry to disk."""
@@ -1851,6 +2019,17 @@ class ExtensionManager:
         required = manifest.requires_speckit_version
 
         # Parse version specifier (e.g., ">=0.1.0,<2.0.0")
+        # Defense in depth: the manifest validator now rejects a non-string
+        # requires.speckit_version, but this method is public and also reachable
+        # with a hand-built manifest object. ``InvalidSpecifier`` alone does not
+        # cover a non-string -- scalars raise TypeError from the constructor, and
+        # a list/dict is iterable so it constructs here and only breaks inside
+        # .contains(). Reject up front so this always reports a CompatibilityError.
+        if not isinstance(required, str):
+            raise CompatibilityError(
+                "Invalid version specifier: expected a string, got "
+                f"{type(required).__name__} ({required!r})"
+            )
         try:
             SpecifierSet(required)  # Just to validate
         except InvalidSpecifier:
@@ -2093,8 +2272,19 @@ class ExtensionManager:
                         _staged_modes = _loaded_modes
             for staged_name in sorted(staged_names):
                 staged_file = rescue_staging_dir / staged_name
-                staged_stat = staged_file.stat()
-                staged_bytes = staged_file.read_bytes()
+                # A staged backup that cannot be read or stat'ed must not
+                # crash the retry with a raw OSError: like an uncomparable
+                # live config below, treat it as a conflict so both copies
+                # are preserved and the user resolves it while dest_dir is
+                # still untouched. Every sibling read in this path (live
+                # twin, packaged baseline, mode sidecar) already catches
+                # OSError.
+                try:
+                    staged_stat = staged_file.stat()
+                    staged_bytes = staged_file.read_bytes()
+                except OSError:
+                    conflicting.add(staged_name)
+                    continue
                 # Prefer the sidecar-recorded mode; fall back to the staged
                 # file's own mode for backwards-compat with staging dirs
                 # written before the sidecar was introduced.
@@ -2186,10 +2376,24 @@ class ExtensionManager:
                         "a regular file or remove it — then reinstall."
                     )
                 if cfg_file.is_file():
-                    stranded_configs[cfg_file.name] = (
-                        cfg_file.read_bytes(),
-                        cfg_file.stat().st_mode,
-                    )
+                    # A kept config that cannot be read or stat'ed must not
+                    # crash the reinstall with a raw OSError — and must not
+                    # reach the rmtree below unrescued. Like the symlink
+                    # guard above, reject while dest_dir is untouched so the
+                    # preserved bytes are never lost.
+                    try:
+                        stranded_configs[cfg_file.name] = (
+                            cfg_file.read_bytes(),
+                            cfg_file.stat().st_mode,
+                        )
+                    except OSError as exc:
+                        raise ValidationError(
+                            "Preserved extension config for "
+                            f"'{manifest.id}' cannot be read "
+                            f"({cfg_file.name}) in {dest_dir}: {exc}. "
+                            "Resolve manually — fix its permissions or "
+                            "remove it — then reinstall."
+                        ) from exc
 
         if stranded_configs and not staging_is_complete:
             # Write a durable backup outside dest_dir before any
@@ -4255,11 +4459,10 @@ class ConfigManager:
         Returns an empty list if the registry is missing or corrupted
         (fresh project, ad-hoc test harness) so ``_get_env_config`` degrades
         to its pre-fix behaviour rather than crashing. ``UnicodeError`` is
-        caught alongside ``OSError`` because ``ExtensionRegistry._load()``
-        opens the file in text mode and only handles ``JSONDecodeError`` /
-        ``FileNotFoundError``, so a registry file with non-UTF-8 bytes would
-        otherwise surface a ``UnicodeDecodeError`` here and break *every*
-        config read instead of degrading gracefully.
+        kept alongside ``OSError`` as belt-and-braces: ``_load()`` now starts
+        fresh on non-UTF-8 registry bytes itself, but catching it here too
+        keeps this call site degrading gracefully rather than breaking *every*
+        config read if that handling ever regresses.
 
         Used by ``_get_env_config`` to detect env vars whose remainder claims
         a longer, sibling-owned prefix (e.g. ``SPECKIT_GIT_HOOKS_URL`` is
@@ -4509,6 +4712,7 @@ class HookExecutor:
         kimi_skill_mode = selected_ai == "kimi"
         cline_mode = selected_ai == "cline"
         forge_mode = selected_ai == "forge"
+        junie_mode = selected_ai == "junie"
 
         skill_name = self._skill_name_from_command(command_id)
         if dollar_skill_mode and skill_name:
@@ -4523,6 +4727,10 @@ class HookExecutor:
             from ..integrations.forge import format_forge_command_name
 
             return f"/{format_forge_command_name(command_id)}"
+        if junie_mode:
+            from ..integrations.junie import format_junie_command_name
+
+            return f"/{format_junie_command_name(command_id)}"
 
         use_slash = is_slash_skills_agent(selected_ai, ai_skills_enabled)
 

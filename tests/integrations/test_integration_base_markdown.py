@@ -238,15 +238,16 @@ class MarkdownIntegrationTests:
         files.append(".specify/init-options.json")
         files.append(f".specify/integrations/{self.KEY}.manifest.json")
         files.append(".specify/integrations/speckit.manifest.json")
+        files.append(".specify/.gitignore")
 
         if script_variant == "sh":
             for name in ["check-prerequisites.sh", "check-privacy-leaks.sh", "check-upstream-sync.sh",
                          "common.sh", "create-new-feature.sh", "eod.sh", "pre-pr.sh",
-                         "setup-plan.sh", "setup-tasks.sh", "sod.sh"]:
+                         "resolve-template.sh", "setup-plan.sh", "setup-tasks.sh", "sod.sh"]:
                 files.append(f".specify/scripts/bash/{name}")
         else:
             for name in ["check-prerequisites.ps1", "common.ps1", "create-new-feature.ps1",
-                         "setup-plan.ps1", "setup-tasks.ps1"]:
+                         "resolve-template.ps1", "setup-plan.ps1", "setup-tasks.ps1"]:
                 files.append(f".specify/scripts/powershell/{name}")
 
         for name in ["checklist-template.md",

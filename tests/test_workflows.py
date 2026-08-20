@@ -786,6 +786,39 @@ class TestExpressions:
         assert evaluate_condition("{{ inputs.ready }}", ctx) is True
         assert evaluate_condition("{{ inputs.missing }}", ctx) is False
 
+    def test_condition_strips_captured_command_output(self):
+        """A condition resolving to captured stdout must honour "false".
+
+        A ``shell`` step stores ``proc.stdout`` verbatim, so ``run: echo false``
+        resolves to ``"false\\n"``. Without stripping, the trailing newline
+        matched neither the "false" nor the "true" branch and fell through to
+        ``bool("false\\n")`` -> True, so an ``if`` step took its ``then`` branch
+        on a step that printed "false". There is no ``trim`` filter, so a
+        workflow author cannot strip it themselves.
+        """
+        from specify_cli.workflows.expressions import evaluate_condition
+        from specify_cli.workflows.base import StepContext
+
+        ctx = StepContext(steps={"check": {"output": {"stdout": "false\n"}}})
+        assert evaluate_condition("{{ steps.check.output.stdout }}", ctx) is False
+
+        for raw in ("false\n", "false\r\n", " false", "false ", "FALSE\n"):
+            assert evaluate_condition(raw, StepContext()) is False, raw
+        for raw in ("true\n", " true ", "TRUE\r\n"):
+            assert evaluate_condition(raw, StepContext()) is True, raw
+
+    def test_condition_whitespace_only_string_stays_truthy(self):
+        """Stripping must not turn a whitespace-only string into False.
+
+        Only the "false"/"true" special case is stripped; everything else still
+        falls through to ``bool(result)`` on the raw string.
+        """
+        from specify_cli.workflows.expressions import evaluate_condition
+        from specify_cli.workflows.base import StepContext
+
+        assert evaluate_condition("   ", StepContext()) is True
+        assert evaluate_condition("falsey", StepContext()) is True
+
     def test_non_string_passthrough(self):
         from specify_cli.workflows.expressions import evaluate_expression
         from specify_cli.workflows.base import StepContext
@@ -4532,6 +4565,29 @@ steps:
         errors = validate_workflow(definition)
         assert any("invalid type" in e.lower() for e in errors)
 
+    @pytest.mark.parametrize("step_type", [["shell"], {"name": "shell"}])
+    def test_non_string_step_type_reports_error(self, step_type):
+        """Unhashable YAML values must not crash registry membership checks."""
+        from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
+
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "test",
+                    "name": "Test",
+                    "version": "1.0.0",
+                },
+                "steps": [{"id": "bad", "type": step_type}],
+            }
+        )
+
+        errors = validate_workflow(definition)
+
+        assert errors == [
+            f"Step 'bad': 'type' must be a string, got "
+            f"{type(step_type).__name__} ({step_type!r})."
+        ]
+
     def test_nested_step_validation(self):
         from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
 
@@ -7053,6 +7109,35 @@ class TestRunState:
         with pytest.raises(FileNotFoundError):
             RunState.load("nonexistent", project_dir)
 
+    def test_load_rejects_stored_run_id_mismatch(self, project_dir):
+        """The state payload cannot redirect later writes to another run."""
+        from specify_cli.workflows.engine import RunState
+
+        run_dir = (
+            project_dir
+            / ".specify"
+            / "workflows"
+            / "runs"
+            / "requested-run"
+        )
+        run_dir.mkdir(parents=True)
+        (run_dir / "state.json").write_text(
+            json.dumps(
+                {
+                    "run_id": "other-run",
+                    "workflow_id": "test-workflow",
+                    "status": "created",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="stored run_id 'other-run' does not match requested run_id 'requested-run'",
+        ):
+            RunState.load("requested-run", project_dir)
+
     @pytest.mark.parametrize(
         ("installed_workflow_id", "installed_registry_root"),
         [
@@ -7302,6 +7387,94 @@ steps:
         runs = engine.list_runs()
         assert len(runs) == 1
         assert runs[0]["workflow_id"] == "list-test"
+
+    def test_list_skips_malformed_json(self, project_dir):
+        from specify_cli.workflows.engine import WorkflowEngine
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-run"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "state.json").write_text("{invalid json", encoding="utf-8")
+
+        engine = WorkflowEngine(project_dir)
+        assert engine.list_runs() == []
+
+    def test_list_skips_unreadable_file(self, project_dir):
+        import sys
+        import subprocess
+        from specify_cli.workflows.engine import WorkflowEngine
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-run"
+        bad_dir.mkdir(parents=True)
+        state_file = bad_dir / "state.json"
+        state_file.write_text('{"run_id": "x"}', encoding="utf-8")
+
+        if sys.platform == "win32":
+            subprocess.run(["attrib", "+R", str(state_file)], check=True)
+        else:
+            state_file.chmod(0o000)
+
+        try:
+            engine = WorkflowEngine(project_dir)
+            if sys.platform == "win32":
+                assert engine.list_runs() == [{"run_id": "x"}]
+            else:
+                assert engine.list_runs() == []
+        finally:
+            if sys.platform == "win32":
+                subprocess.run(["attrib", "-R", str(state_file)], check=True)
+            else:
+                state_file.chmod(0o644)
+
+    def test_list_skips_non_dict_payload(self, project_dir):
+        from specify_cli.workflows.engine import WorkflowEngine
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-run"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "state.json").write_text('["not", "a", "dict"]', encoding="utf-8")
+
+        engine = WorkflowEngine(project_dir)
+        assert engine.list_runs() == []
+
+    def test_list_skips_empty_dict_payload(self, project_dir):
+        from specify_cli.workflows.engine import WorkflowEngine
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-run"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "state.json").write_text('{}', encoding="utf-8")
+
+        engine = WorkflowEngine(project_dir)
+        assert engine.list_runs() == []
+
+    def test_list_skips_bad_file_with_valid_sibling(self, project_dir):
+        from specify_cli.workflows.engine import WorkflowEngine, WorkflowDefinition
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-run"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "state.json").write_text("{bad", encoding="utf-8")
+
+        yaml_str = """
+schema_version: "1.0"
+workflow:
+  id: "good-run"
+  name: "Good Run"
+  version: "1.0.0"
+steps:
+  - id: step-one
+    type: shell
+    run: "echo test"
+"""
+        definition = WorkflowDefinition.from_string(yaml_str)
+        engine = WorkflowEngine(project_dir)
+        engine.execute(definition)
+
+        runs = engine.list_runs()
+        assert len(runs) == 1
+        assert runs[0]["workflow_id"] == "good-run"
 
 
 # ===== Workflow Registry Tests =====
@@ -12170,6 +12343,46 @@ steps:
         leaked = list(scratch_tmp.glob("*.yml"))
         assert leaked == [], f"leaked temp files: {leaked}"
 
+    def test_add_from_url_interrupt_during_read_leaves_no_temp_file(
+        self, project_dir, monkeypatch, tmp_path
+    ):
+        """A KeyboardInterrupt while streaming the response body must still
+        unlink the already-created (delete=False) temp file. Unlike a
+        download ``ValueError``, ``KeyboardInterrupt`` is a ``BaseException``
+        and is not caught by ``except Exception`` -- only a ``BaseException``
+        handler around the temp-file lifetime can clean it up."""
+        import tempfile as tempfile_mod
+        from unittest.mock import patch
+        from typer.testing import CliRunner
+        from specify_cli import app
+        from specify_cli.workflows import _commands as wf_commands
+
+        monkeypatch.chdir(project_dir)
+        scratch_tmp = tmp_path / "scratch-tmp"
+        scratch_tmp.mkdir()
+        monkeypatch.setattr(tempfile_mod, "tempdir", str(scratch_tmp))
+
+        def _boom(*args, **kwargs):
+            raise KeyboardInterrupt()
+
+        monkeypatch.setattr(wf_commands, "_read_response_within_limit", _boom)
+        body = b"id: align-wf\n"
+        runner = CliRunner()
+        with patch(
+            "specify_cli.authentication.http.open_url",
+            side_effect=lambda url, timeout=None, extra_headers=None, redirect_validator=None: self._FakeResponse(
+                body, url
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                ["workflow", "add", "align-wf", "--from", "https://example.com/workflow.yml"],
+                input="y\n",
+            )
+        assert result.exit_code != 0
+        leaked = list(scratch_tmp.glob("*.yml"))
+        assert leaked == [], f"leaked temp files: {leaked}"
+
     def test_add_from_url_oversized_content_length_leaves_no_temp_file(
         self, project_dir, monkeypatch, tmp_path
     ):
@@ -16586,6 +16799,57 @@ steps:
         captured = capsys.readouterr()
         assert "corrupt run state" in captured.err
         assert "corrupt run state" not in captured.out
+        assert captured.out.strip() == ""
+
+    def test_status_unreadable_run_state_exits_cleanly(
+        self, project_dir, monkeypatch
+    ):
+        """`workflow status <run_id>` gained a ValueError boundary to match
+        `workflow resume`, but not resume's OSError one -- so an unreadable
+        state.json (bad permissions, a directory in its place, an I/O error)
+        still leaked a raw traceback. exists() is True for a directory, so
+        the guard passes and open() raises OSError."""
+        from typer.testing import CliRunner
+        from specify_cli import app
+
+        monkeypatch.chdir(project_dir)
+        runs_dir = project_dir / ".specify" / "workflows" / "runs" / "abc123"
+        runs_dir.mkdir(parents=True, exist_ok=True)
+        # A directory where state.json should be: exists() passes, open() fails.
+        (runs_dir / "state.json").mkdir(exist_ok=True)
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["workflow", "status", "abc123"])
+        assert result.exit_code != 0
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        assert "Error" in result.output
+
+    def test_status_json_unreadable_run_state_error_goes_to_stderr(
+        self, project_dir, monkeypatch, capsys
+    ):
+        """The OSError handler must route to stderr under --json too, so the
+        stdout JSON stream stays parseable -- mirroring the sibling
+        FileNotFoundError/ValueError handlers."""
+        import typer
+        from specify_cli.workflows import _commands
+        from specify_cli.workflows.engine import RunState
+
+        (project_dir / ".specify" / "workflows").mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(
+            _commands, "_require_specify_project", lambda: project_dir
+        )
+
+        def _raise_os_error(*args, **kwargs):
+            raise PermissionError(13, "Permission denied")
+
+        monkeypatch.setattr(RunState, "load", _raise_os_error)
+
+        with pytest.raises(typer.Exit) as exc:
+            _commands.workflow_status("some-run", json_output=True)
+        assert exc.value.exit_code == 1
+        captured = capsys.readouterr()
+        assert "Permission denied" in captured.err
+        assert "Permission denied" not in captured.out
         assert captured.out.strip() == ""
 
     def test_status_no_run_id_list_path_unaffected(self, project_dir, monkeypatch):
