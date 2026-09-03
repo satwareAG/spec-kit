@@ -116,6 +116,7 @@ The fork MUST maintain `AGENTS.md`, `specs/metadata.json` with upstream/downstre
 | Integrations functional | `specify init --help` lists agy, bob, cline, hermes, kimi as available integrations |
 | Version correct | `pyproject.toml` version matches merged tag |
 | No custom code lost | `git diff` shows all 5 fork agent directories intact post-merge |
+| Release published | Every pushed `satware-v*` tag has a GitHub release object; `releases/latest` returns the newest fork tag |
 
 ## Sync Procedure (Reference Implementation)
 
@@ -143,7 +144,20 @@ uv run pytest tests/ -x -q
 
 # 8. Commit and push
 git push origin HEAD
+
+# 9. Cut the fork release tag (annotated, after the sync PR merges)
+git tag -a satware-vX.Y.Z+1 <merge-commit-on-main> -m "satwareAG fork release: upstream spec-kit vX.Y.Z integrated"
+git push origin satware-vX.Y.Z+1
+
+# 10. Publish the GitHub release object (NEVER skip - a tag without a
+#     release is invisible to `releases/latest` consumers)
+gh release create satware-vX.Y.Z+1 --title "satware-vX.Y.Z+1 - upstream vX.Y.Z" \
+  --notes-file <release-notes.md> --latest
 ```
+
+**Release step is mandatory** (#112): every pushed `satware-v*` tag MUST get a GitHub
+release object in the same pass as the tag-cut. For backfills of older tags, pass
+`--latest=false` so the newest release keeps the `latest` marker.
 
 ## Out of Scope
 
