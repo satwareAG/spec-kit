@@ -59,4 +59,12 @@ docs/dev
 .github/copilot-instructions.md
 .grok/
 .specify/
-specs/
+specs/*
+
+# --- satwareAG fork (IPADP): re-include force-tracked meta files ---
+# specs/* above keeps upstream's dogfooding ignore, but the IPADP meta files
+# are tracked (force-added). Negations here let plain `git add` work on them
+# instead of exiting nonzero with the ignored-paths advice (#118).
+!specs/metadata.json
+!specs/upstream-release-sync-strategy/
+!specs/upstream-release-sync-strategy/**
