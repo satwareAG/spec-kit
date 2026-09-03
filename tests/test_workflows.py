@@ -711,6 +711,74 @@ class TestExpressions:
                 StepContext(inputs={"tags": ["a", "b"]}),
             )
 
+    def test_filter_on_a_comparison_operand_is_refused(self):
+        """A filter mixed with a comparison must be reported, not guessed at.
+
+        The pipe is detected before the operators, so
+        `count > limit | default(5)` evaluated `count > limit` first and then
+        applied `default` to the resulting bool — a no-op — silently returning
+        the comparison against the *unfiltered* operand (False, where the author
+        meant `10 > 5` = True).
+
+        This is the mirror of a filter followed by a comparison
+        (`default('7') > '5'`), which this module already refuses rather than
+        guessing at the intended precedence. Both are now refused the same way.
+        """
+        import pytest
+        from specify_cli.workflows.expressions import evaluate_expression
+        from specify_cli.workflows.base import StepContext
+
+        ctx = StepContext(inputs={"count": 10, "name": "x"})
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression("{{ inputs.count > inputs.limit | default(5) }}", ctx)
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression(
+                '{{ inputs.name == inputs.other | default("x") }}', ctx
+            )
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression("{{ inputs.a and inputs.b | default(1) }}", ctx)
+
+    def test_filter_after_a_unary_not_is_refused(self):
+        """Unary `not` mis-binds the same way and must be caught too.
+
+        `not` is a leading prefix rather than an infix token (the parser tests
+        it with `expr.startswith("not ")`), so it has no surrounding space for
+        the operator scan to match. Without an explicit check,
+        `not inputs.missing | default(1)` evaluated `not inputs.missing` first
+        and applied `default` to that boolean — a no-op — silently returning
+        True where the author meant `not 1` = False.
+        """
+        import pytest
+        from specify_cli.workflows.expressions import evaluate_expression
+        from specify_cli.workflows.base import StepContext
+
+        ctx = StepContext(inputs={"value": 0, "flag": True})
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression("{{ not inputs.missing | default(1) }}", ctx)
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression("{{ not inputs.value | default(1) }}", ctx)
+        # A `not` that follows and/or is already caught by that token.
+        with pytest.raises(ValueError, match="ambiguous filter precedence"):
+            evaluate_expression(
+                "{{ inputs.flag and not inputs.value | default(1) }}", ctx
+            )
+        # Plain unary `not`, with no filter, is untouched.
+        assert evaluate_expression("{{ not inputs.value }}", ctx) is True
+        assert evaluate_expression("{{ not inputs.flag }}", ctx) is False
+
+    def test_plain_filters_and_chains_are_unaffected(self):
+        """Only a filter mixed with an operator is refused."""
+        from specify_cli.workflows.expressions import evaluate_expression
+        from specify_cli.workflows.base import StepContext
+
+        ctx = StepContext(inputs={"items": ["a", "b"], "count": 10, "name": "x"})
+        assert evaluate_expression("{{ inputs.missing | default(5) }}", ctx) == 5
+        assert evaluate_expression('{{ inputs.items | join(", ") }}', ctx) == "a, b"
+        assert evaluate_expression("{{ inputs.items | contains('a') }}", ctx) is True
+        # Operators without a filter, and filters without an operator, both fine.
+        assert evaluate_expression("{{ inputs.count > 5 }}", ctx) is True
+        assert evaluate_expression('{{ inputs.name == "x" }}', ctx) is True
+
     def test_chained_filters_apply_left_to_right(self):
         # Filters chain: each filter's result feeds the next. `map` yields a
         # list and `join` is the only filter that renders a list to a string,
@@ -3128,6 +3196,55 @@ class TestIfThenStep:
 class TestSwitchStep:
     """Test the switch step type."""
 
+    def test_execute_matches_case_ignoring_surrounding_whitespace(self):
+        """A shell step's stdout keeps its trailing newline; the case must match.
+
+        `ShellStep` stores `proc.stdout` verbatim, so `run: echo approve`
+        resolves to "approve" plus a newline. Unstripped, that matched no
+        `approve:` case and the switch silently fell through to `default:`
+        while still reporting COMPLETED. There is no `trim` filter, so a
+        workflow author cannot strip it themselves.
+        """
+        from specify_cli.workflows.steps.switch import SwitchStep
+        from specify_cli.workflows.base import StepContext, StepStatus
+
+        config = {
+            "id": "route",
+            "expression": "{{ steps.check.output.stdout }}",
+            "cases": {
+                "approve": [{"id": "approved", "type": "command", "command": "echo"}],
+                "reject": [{"id": "rejected", "type": "command", "command": "echo"}],
+            },
+            "default": [{"id": "fallback", "type": "command", "command": "echo"}],
+        }
+        for raw in ("approve\n", "approve\r\n", "  approve  ", "approve"):
+            ctx = StepContext(steps={"check": {"output": {"stdout": raw}}})
+            result = SwitchStep().execute(config, ctx)
+            assert result.status == StepStatus.COMPLETED
+            assert result.output["matched_case"] == "approve", repr(raw)
+            assert [s["id"] for s in result.next_steps] == ["approved"], repr(raw)
+            # The raw value is still reported unchanged.
+            assert result.output["expression_value"] == raw
+
+    def test_execute_still_falls_through_for_a_genuine_mismatch(self):
+        """Stripping must not make unrelated values match."""
+        from specify_cli.workflows.steps.switch import SwitchStep
+        from specify_cli.workflows.base import StepContext
+
+        config = {
+            "id": "route",
+            "expression": "{{ steps.check.output.stdout }}",
+            "cases": {
+                "approve": [{"id": "approved", "type": "command", "command": "echo"}]
+            },
+            "default": [{"id": "fallback", "type": "command", "command": "echo"}],
+        }
+        ctx = StepContext(steps={"check": {"output": {"stdout": "approve-later\n"}}})
+        result = SwitchStep().execute(config, ctx)
+
+        assert result.output["matched_case"] == "__default__"
+        assert [s["id"] for s in result.next_steps] == ["fallback"]
+
     def test_execute_matches_case(self):
         from specify_cli.workflows.steps.switch import SwitchStep
         from specify_cli.workflows.base import StepContext
@@ -3308,6 +3425,38 @@ class TestSwitchStep:
         step = SwitchStep()
         errors = step.validate({"id": "test", "cases": {}})
         assert any("missing 'expression'" in e for e in errors)
+
+    def test_validate_missing_cases(self):
+        """`cases` is the switch's branch payload and must be required.
+
+        Every other control-flow step requires its own: `if` requires `then`,
+        `fan-out` requires `items` and `step`, `fan-in` a non-empty `wait_for`,
+        `gate` a `message`. Without it, a `case:` typo validated clean and then
+        reported COMPLETED with `matched_case: "__default__"` having dispatched
+        nothing.
+        """
+        from specify_cli.workflows.steps.switch import SwitchStep
+
+        step = SwitchStep()
+
+        # Absent entirely.
+        errors = step.validate({"id": "route", "expression": "{{ inputs.x }}"})
+        assert any("missing 'cases'" in e for e in errors), errors
+
+        # The realistic slip: `case:` instead of `cases:`.
+        errors = step.validate(
+            {"id": "route", "expression": "{{ inputs.x }}", "case": {"a": []}}
+        )
+        assert any("missing 'cases'" in e for e in errors), errors
+
+    def test_validate_accepts_an_empty_cases_mapping(self):
+        """An explicitly declared but empty `cases:` is still a declaration."""
+        from specify_cli.workflows.steps.switch import SwitchStep
+
+        errors = SwitchStep().validate(
+            {"id": "route", "expression": "{{ inputs.x }}", "cases": {}}
+        )
+        assert not any("missing 'cases'" in e for e in errors), errors
 
     def test_validate_invalid_cases_and_default(self):
         from specify_cli.workflows.steps.switch import SwitchStep
@@ -4520,6 +4669,94 @@ steps:
         errors = validate_workflow(definition)
         assert errors == []
 
+    @pytest.mark.parametrize(
+        "field, bad_value",
+        [
+            ("integration", ["claude"]),
+            ("integration", {"name": "claude"}),
+            ("integration", False),
+            ("model", ["gpt-5"]),
+            ("model", {"name": "gpt-5"}),
+            ("model", 0),
+            ("options", ["max_tokens"]),
+            ("options", "max_tokens"),
+            ("options", False),
+        ],
+    )
+    def test_rejects_invalid_workflow_dispatch_defaults(self, field, bad_value):
+        """Top-level dispatch defaults must retain their invalid shape for
+        validation instead of being passed to a step or normalized to ``{}``.
+        """
+        from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
+
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "test",
+                    "name": "Test",
+                    "version": "1.0.0",
+                    field: bad_value,
+                },
+                "steps": [{"id": "step-one", "command": "speckit.specify"}],
+            }
+        )
+
+        errors = validate_workflow(definition)
+
+        assert any(f"workflow.{field}" in error for error in errors), errors
+        assert any(type(bad_value).__name__ in error for error in errors), errors
+        if field == "options":
+            assert definition.default_options == bad_value
+
+    def test_preserves_valid_workflow_dispatch_defaults(self):
+        """String and mapping defaults stay available unchanged to steps."""
+        from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
+
+        defaults = {
+            "integration": "claude",
+            "model": "gpt-5",
+            "options": {"max_tokens": 8000},
+        }
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "test",
+                    "name": "Test",
+                    "version": "1.0.0",
+                    **defaults,
+                },
+                "steps": [{"id": "step-one", "command": "speckit.specify"}],
+            }
+        )
+
+        assert definition.default_integration == defaults["integration"]
+        assert definition.default_model == defaults["model"]
+        assert definition.default_options == defaults["options"]
+        assert validate_workflow(definition) == []
+
+    def test_accepts_null_workflow_dispatch_defaults(self):
+        """Null integration/model inherit at runtime and null options stays {}."""
+        from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
+
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "test",
+                    "name": "Test",
+                    "version": "1.0.0",
+                    "integration": None,
+                    "model": None,
+                    "options": None,
+                },
+                "steps": [{"id": "step-one", "command": "speckit.specify"}],
+            }
+        )
+
+        assert definition.default_integration is None
+        assert definition.default_model is None
+        assert definition.default_options == {}
+        assert validate_workflow(definition) == []
+
     def test_no_steps(self):
         from specify_cli.workflows.engine import WorkflowDefinition, validate_workflow
 
@@ -5164,6 +5401,36 @@ steps:
 
 class TestWorkflowEngine:
     """Test WorkflowEngine execution."""
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("integration", ["claude"]),
+            ("model", {"name": "gpt-5"}),
+            ("options", ["max_tokens"]),
+        ],
+    )
+    def test_execute_rejects_invalid_workflow_dispatch_defaults(
+        self, project_dir, field, value
+    ):
+        from specify_cli.workflows.engine import WorkflowDefinition, WorkflowEngine
+
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "invalid-dispatch-defaults",
+                    "name": "Invalid dispatch defaults",
+                    "version": "1.0.0",
+                    field: value,
+                },
+                "steps": [],
+            }
+        )
+
+        with pytest.raises(ValueError, match=f"workflow.{field}"):
+            WorkflowEngine(project_dir).execute(definition)
+
+        assert not (project_dir / ".specify" / "workflows" / "runs").exists()
 
     def test_load_from_file(self, sample_workflow_file, project_dir):
         from specify_cli.workflows.engine import WorkflowEngine
@@ -6684,6 +6951,45 @@ steps:
 # and abort the run.
 
 
+class TestWorkflowDispatchDefaultExecution:
+    """Execution safeguards for defaults inherited by dispatch steps."""
+
+    @pytest.mark.parametrize(
+        "defaults",
+        [
+            {
+                "integration": "claude",
+                "model": "gpt-5",
+                "options": {"max_tokens": 8000},
+            },
+            {"integration": None, "model": None, "options": None},
+        ],
+    )
+    def test_execute_accepts_valid_and_null_dispatch_defaults(
+        self, project_dir, defaults
+    ):
+        """Defaults with supported shapes remain executable without validation."""
+        from specify_cli.workflows.base import RunStatus
+        from specify_cli.workflows.engine import WorkflowDefinition, WorkflowEngine
+
+        definition = WorkflowDefinition(
+            {
+                "workflow": {
+                    "id": "valid-defaults",
+                    "name": "Valid Defaults",
+                    "version": "1.0.0",
+                    **defaults,
+                },
+                "steps": [],
+            }
+        )
+
+        state = WorkflowEngine(project_dir).execute(definition)
+
+        assert state.status == RunStatus.COMPLETED
+        assert state.step_results == {}
+
+
 class TestContinueOnError:
     """Test the `continue_on_error` step-level field."""
 
@@ -7476,6 +7782,71 @@ steps:
         assert len(runs) == 1
         assert runs[0]["workflow_id"] == "good-run"
 
+    def test_list_skips_invalid_utf8_with_valid_sibling(self, project_dir):
+        from specify_cli.workflows.engine import WorkflowEngine, WorkflowDefinition
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-utf8"
+        bad_dir.mkdir(parents=True)
+        (bad_dir / "state.json").write_bytes(b"\xff\xfe invalid utf8")
+
+        yaml_str = """
+schema_version: "1.0"
+workflow:
+  id: "good-run-utf8"
+  name: "Good Run UTF8"
+  version: "1.0.0"
+steps:
+  - id: step-one
+    type: shell
+    run: "echo test"
+"""
+        definition = WorkflowDefinition.from_string(yaml_str)
+        engine = WorkflowEngine(project_dir)
+        engine.execute(definition)
+
+        runs = engine.list_runs()
+        assert len(runs) == 1
+        assert runs[0]["workflow_id"] == "good-run-utf8"
+
+    def test_list_skips_oserror_with_valid_sibling(self, project_dir, monkeypatch):
+        import builtins
+        from specify_cli.workflows.engine import WorkflowEngine, WorkflowDefinition
+
+        runs_dir = project_dir / ".specify" / "workflows" / "runs"
+        bad_dir = runs_dir / "bad-oserror"
+        bad_dir.mkdir(parents=True)
+        state_file = bad_dir / "state.json"
+        state_file.write_text('{"run_id": "bad"}', encoding="utf-8")
+
+        original_open = builtins.open
+
+        def _mock_open(path, *args, **kwargs):
+            if str(path).endswith("state.json") and "bad-oserror" in str(path):
+                raise OSError("permission denied")
+            return original_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "open", _mock_open)
+
+        yaml_str = """
+schema_version: "1.0"
+workflow:
+  id: "good-run-oserror"
+  name: "Good Run OSError"
+  version: "1.0.0"
+steps:
+  - id: step-one
+    type: shell
+    run: "echo test"
+"""
+        definition = WorkflowDefinition.from_string(yaml_str)
+        engine = WorkflowEngine(project_dir)
+        engine.execute(definition)
+
+        runs = engine.list_runs()
+        assert len(runs) == 1
+        assert runs[0]["workflow_id"] == "good-run-oserror"
+
 
 # ===== Workflow Registry Tests =====
 
@@ -8171,6 +8542,18 @@ class TestWorkflowCatalog:
         with pytest.raises(WorkflowValidationError, match="out of range"):
             catalog.remove_catalog(5)
 
+    @pytest.mark.parametrize("bad", [[], False, 0, ""])
+    def test_remove_catalog_rejects_falsy_non_mapping_config(
+        self, project_dir, bad
+    ):
+        from specify_cli.workflows.catalog import WorkflowCatalog, WorkflowValidationError
+
+        config_path = project_dir / ".specify" / "workflow-catalogs.yml"
+        config_path.write_text(yaml.safe_dump(bad), encoding="utf-8")
+
+        with pytest.raises(WorkflowValidationError, match="expected a mapping"):
+            WorkflowCatalog(project_dir).remove_catalog(0)
+
     def test_get_catalog_configs(self, project_dir):
         from specify_cli.workflows.catalog import WorkflowCatalog
 
@@ -8852,6 +9235,23 @@ class TestStepCatalog:
         assert len(data["catalogs"]) == 1
         assert data["catalogs"][0]["url"] == "https://example.com/steps.json"
 
+    @pytest.mark.parametrize("bad", [[], False, 0, ""])
+    def test_add_catalog_rejects_falsy_non_mapping_config(
+        self, project_dir, bad
+    ):
+        from specify_cli.workflows.catalog import StepCatalog, StepValidationError
+
+        config_path = project_dir / ".specify" / "step-catalogs.yml"
+        original = yaml.safe_dump(bad)
+        config_path.write_text(original, encoding="utf-8")
+
+        with pytest.raises(StepValidationError, match="expected a mapping"):
+            StepCatalog(project_dir).add_catalog(
+                "https://example.com/steps.json", "my-steps"
+            )
+
+        assert config_path.read_text(encoding="utf-8") == original
+
     def test_add_catalog_duplicate_rejected(self, project_dir):
         from specify_cli.workflows.catalog import StepCatalog, StepValidationError
 
@@ -8883,6 +9283,18 @@ class TestStepCatalog:
 
         with pytest.raises(StepValidationError, match="out of range"):
             catalog.remove_catalog(5)
+
+    @pytest.mark.parametrize("bad", [[], False, 0, ""])
+    def test_remove_catalog_rejects_falsy_non_mapping_config(
+        self, project_dir, bad
+    ):
+        from specify_cli.workflows.catalog import StepCatalog, StepValidationError
+
+        config_path = project_dir / ".specify" / "step-catalogs.yml"
+        config_path.write_text(yaml.safe_dump(bad), encoding="utf-8")
+
+        with pytest.raises(StepValidationError, match="expected a mapping"):
+            StepCatalog(project_dir).remove_catalog(0)
 
     def test_remove_catalog_no_config(self, project_dir):
         from specify_cli.workflows.catalog import StepCatalog, StepValidationError
@@ -10961,6 +11373,45 @@ steps:
         state = engine.execute(definition)
         with pytest.raises(ValueError):
             engine.resume(state.run_id, {"count": "not-a-number"})
+
+    def test_resume_rejects_legacy_invalid_options_before_state_mutation(
+        self, project_dir, monkeypatch
+    ):
+        from specify_cli.workflows.base import RunStatus
+        from specify_cli.workflows.engine import RunState, WorkflowDefinition
+
+        definition = WorkflowDefinition.from_string(self._WF_NUM)
+        engine = self._engine(project_dir)
+        state = engine.execute(definition)
+        assert state.status == RunStatus.PAUSED
+
+        workflow_copy = (
+            project_dir
+            / ".specify"
+            / "workflows"
+            / "runs"
+            / state.run_id
+            / "workflow.yml"
+        )
+        workflow_copy.write_text(
+            self._WF_NUM.replace(
+                'version: "1.0.0"', 'version: "1.0.0"\n  options: [max_tokens]'
+            ),
+            encoding="utf-8",
+        )
+
+        def fail_step_context(*args, **kwargs):
+            raise AssertionError("StepContext must not be created")
+
+        monkeypatch.setattr("specify_cli.workflows.engine.StepContext", fail_step_context)
+
+        with pytest.raises(ValueError, match="'workflow.options' must be a mapping or null"):
+            engine.resume(state.run_id, {"count": "5"})
+
+        reloaded = RunState.load(state.run_id, project_dir)
+        assert reloaded.status == RunStatus.PAUSED
+        assert reloaded.error is None
+        assert reloaded.inputs["count"] == 1
 
     def test_retry_verdict_input_is_consumed_and_can_be_replaced(self, project_dir):
         import json as _json
