@@ -75,7 +75,7 @@ def _build_mini(tmp_path: Path) -> Path:
                     "license": "MIT",
                 },
                 "requires": {"speckit_version": ">=0.1.0"},
-                "provides": {"extensions": [{"id": "agent-context", "version": "1.0.0"}]},
+                "provides": {"extensions": [{"id": "agent-context", "version": "1.0.1"}]},
             }
         ),
         encoding="utf-8",
