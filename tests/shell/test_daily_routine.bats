@@ -1,10 +1,10 @@
 #!/usr/bin/env bats
 # tests/shell/test_daily_routine.bats — IPADP Phase 4.2 (issue #23)
-# Covers scripts/daily-routine.sh dispatcher.
+# Covers scripts/bash/daily-routine.sh dispatcher.
 
 setup() {
     REPO_ROOT="$(cd "${BATS_TEST_DIRNAME}/../.." && pwd)"
-    DISPATCHER="$REPO_ROOT/scripts/daily-routine.sh"
+    DISPATCHER="$REPO_ROOT/scripts/bash/daily-routine.sh"
 }
 
 @test "daily-routine: help exits 0 and prints usage" {

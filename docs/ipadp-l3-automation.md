@@ -52,7 +52,7 @@ gh workflow run upstream-sync-check.yml --repo satwareAG/spec-kit
 
 ## 2. Repo-local SoD / EoD hooks
 
-**Files:** `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/daily-routine.sh`.
+**Files:** `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/bash/daily-routine.sh`.
 
 ### Purpose
 
@@ -63,7 +63,7 @@ two validation checks the fork must honor: privacy + upstream sync.
 ### Start-of-Day (`sod`)
 
 ```bash
-bash scripts/daily-routine.sh sod
+bash scripts/bash/daily-routine.sh sod
 ```
 
 1. References `~/Documents/Cline/Workflows/sod.protocol.md` (graceful
@@ -74,7 +74,7 @@ bash scripts/daily-routine.sh sod
 ### End-of-Day (`eod`)
 
 ```bash
-bash scripts/daily-routine.sh eod
+bash scripts/bash/daily-routine.sh eod
 ```
 
 1. References `~/Documents/Cline/Workflows/eod.protocol.md` (graceful fallback).
@@ -82,16 +82,16 @@ bash scripts/daily-routine.sh eod
 
 ### Dispatcher
 
-`scripts/daily-routine.sh` accepts `sod`, `eod`, and `help` subcommands and is
+`scripts/bash/daily-routine.sh` accepts `sod`, `eod`, and `help` subcommands and is
 safe to run from any CWD inside the repo.
 
 ## 3. Local run instructions
 
 ```bash
 # Sanity checks
-bash scripts/daily-routine.sh help
-bash scripts/daily-routine.sh sod
-bash scripts/daily-routine.sh eod
+bash scripts/bash/daily-routine.sh help
+bash scripts/bash/daily-routine.sh sod
+bash scripts/bash/daily-routine.sh eod
 
 # Underlying checks directly
 bash scripts/bash/check-privacy-leaks.sh .

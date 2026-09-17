@@ -411,6 +411,7 @@ class YamlIntegrationTests:
                 "check-upstream-sync.sh",
                 "common.sh",
                 "create-new-feature.sh",
+                "daily-routine.sh",
                 "eod.sh",
                 "pre-pr.sh",
                 "resolve-template.sh",

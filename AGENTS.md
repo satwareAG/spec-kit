@@ -507,6 +507,7 @@ Disclosure is **continuous**, not a one-time event. A single AI-disclosure parag
 
 - Before opening a pull request, check whether the account that will file it already has three open pull requests in this repository.
 - If so, alert the user that additional submissions may receive lower review priority and ask for explicit permission to proceed. Do not assume consent. If the user is unavailable to provide that permission, including during autonomous or non-interactive operation, do not open the pull request. Preserve the work on a branch and report that confirmation is required.
+- Repository-owned `gh-aw` maintenance workflows are exempt from this open-PR count check and confirmation requirement.
 
 ### Commits
 
@@ -563,7 +564,7 @@ internal satware AG `wiki` repository (`specs/rfc-interproject-agentic-developme
 |-------|-------------|-----------------------|
 | L1    | `AGENTS.md` + `specs/metadata.json` with upstream/downstream graph | This file + `specs/metadata.json` |
 | L2    | Privacy validation in CI                                          | `scripts/bash/check-privacy-leaks.sh`, `.privacy-whitelist`, `.github/workflows/privacy-check.yml` |
-| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, `.github/workflows/upstream-sync-check.yml`, `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/daily-routine.sh`, `$SATWARE_HARNESS/workflows/sod.protocol.md` / `eod.protocol.md` |
+| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, `.github/workflows/upstream-sync-check.yml`, `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/bash/daily-routine.sh`, `$SATWARE_HARNESS/workflows/sod.protocol.md` / `eod.protocol.md` |
 
 ### Harmony with the satware harness (`$SATWARE_HARNESS`)
 
@@ -588,8 +589,8 @@ Key rules that govern SDD/TDD and day-to-day behavior on spec-kit:
 
 At the start of every working session an agent working on this repository SHOULD:
 
-1. Run the repo-local SoD hook: `bash scripts/daily-routine.sh sod` (references `$SATWARE_HARNESS/workflows/sod.protocol.md` when available, then runs `check-privacy-leaks.sh` and `check-upstream-sync.sh`).
-2. At the end of the session, run the repo-local EoD hook: `bash scripts/daily-routine.sh eod` (references `$SATWARE_HARNESS/workflows/eod.protocol.md` when available, then runs `check-privacy-leaks.sh`).
+1. Run the repo-local SoD hook: `bash scripts/bash/daily-routine.sh sod` (references `$SATWARE_HARNESS/workflows/sod.protocol.md` when available, then runs `check-privacy-leaks.sh` and `check-upstream-sync.sh`).
+2. At the end of the session, run the repo-local EoD hook: `bash scripts/bash/daily-routine.sh eod` (references `$SATWARE_HARNESS/workflows/eod.protocol.md` when available, then runs `check-privacy-leaks.sh`).
 
 In CI, `.github/workflows/upstream-sync-check.yml` runs `scripts/bash/check-upstream-sync.sh` on a daily schedule and opens/updates a rolling `upstream-sync: <tag> available` issue when a new upstream `github/spec-kit` release tag is detected.
 
@@ -606,7 +607,7 @@ See `docs/fork-agent-parity.md` for the fork-agent parity audit (IPADP Phase 4.3
 5. **Implement** — make the tests pass with the minimum change set.
 6. **Checklists** — fulfill `templates/checklist-template.md` prior to merge.
 7. **Privacy + upstream sync** — verify via the two scripts above.
-8. **Pre-PR check** — run `bash scripts/daily-routine.sh pre-pr` before pushing to catch lint/test failures locally. Runs ruff, integration tests, privacy check, and upstream sync in a single pass.
+8. **Pre-PR check** — run `bash scripts/bash/daily-routine.sh pre-pr` before pushing to catch lint/test failures locally. Runs ruff, integration tests, privacy check, and upstream sync in a single pass.
 9. **Commit + PR** — follow conventional commits (`<type>(<scope>): <msg>`) with signed trailers where required.
 
 ---

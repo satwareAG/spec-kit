@@ -1,7 +1,7 @@
 {
   "name": "spec-kit",
-  "version": "1.0.6",
-  "fork_version": "satware-v1.0.6",
+  "version": "1.0.7",
+  "fork_version": "satware-v1.0.7",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
@@ -59,7 +59,7 @@
     "upstream_sync_check": "scripts/bash/check-upstream-sync.sh",
     "sod_hook": "scripts/bash/sod.sh",
     "eod_hook": "scripts/bash/eod.sh",
-    "dispatcher": "scripts/daily-routine.sh",
+    "dispatcher": "scripts/bash/daily-routine.sh",
     "ci_workflow": ".github/workflows/upstream-sync-check.yml",
     "docs": "docs/ipadp-l3-automation.md"
   },
@@ -77,5 +77,5 @@
     ],
     "symlink_script": "$SATWARE_HARNESS/scripts/env-setup-symlinks.sh"
   },
-  "project_version": "1.0.6"
+  "project_version": "1.0.7"
 }
