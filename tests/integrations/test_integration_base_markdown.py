@@ -242,7 +242,7 @@ class MarkdownIntegrationTests:
 
         if script_variant == "sh":
             for name in ["check-prerequisites.sh", "check-privacy-leaks.sh", "check-upstream-sync.sh",
-                         "common.sh", "create-new-feature.sh", "eod.sh", "pre-pr.sh",
+                         "common.sh", "create-new-feature.sh", "daily-routine.sh", "eod.sh", "pre-pr.sh",
                          "resolve-template.sh", "setup-plan.sh", "setup-tasks.sh", "sod.sh"]:
                 files.append(f".specify/scripts/bash/{name}")
         else:

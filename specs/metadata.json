@@ -59,7 +59,7 @@
     "upstream_sync_check": "scripts/bash/check-upstream-sync.sh",
     "sod_hook": "scripts/bash/sod.sh",
     "eod_hook": "scripts/bash/eod.sh",
-    "dispatcher": "scripts/daily-routine.sh",
+    "dispatcher": "scripts/bash/daily-routine.sh",
     "ci_workflow": ".github/workflows/upstream-sync-check.yml",
     "docs": "docs/ipadp-l3-automation.md"
   },

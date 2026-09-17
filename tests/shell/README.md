@@ -6,7 +6,7 @@ IPADP Phase 4.2 (issue #23) — automated tests for the fork's bash scripts.
 
 | Script | Test file |
 |---|---|
-| `scripts/daily-routine.sh` | `test_daily_routine.bats` |
+| `scripts/bash/daily-routine.sh` | `test_daily_routine.bats` |
 | `scripts/bash/sod.sh` | `test_sod.bats` |
 | `scripts/bash/eod.sh` | `test_eod.bats` |
 | `scripts/bash/check-privacy-leaks.sh` | `test_check_privacy_leaks.bats` |

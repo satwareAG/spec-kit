@@ -350,6 +350,7 @@ class TestGenericIntegration:
             ".specify/scripts/bash/check-upstream-sync.sh",
             ".specify/scripts/bash/common.sh",
             ".specify/scripts/bash/create-new-feature.sh",
+            ".specify/scripts/bash/daily-routine.sh",
             ".specify/scripts/bash/eod.sh",
             ".specify/scripts/bash/pre-pr.sh",
             ".specify/scripts/bash/resolve-template.sh",

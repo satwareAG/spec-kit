@@ -2,10 +2,10 @@
 # daily-routine.sh — thin dispatcher for daily rituals.
 #
 # Usage:
-#   scripts/daily-routine.sh sod     # Start-of-Day
-#   scripts/daily-routine.sh eod     # End-of-Day
-#   scripts/daily-routine.sh pre-pr  # Pre-PR health checks
-#   scripts/daily-routine.sh help
+#   scripts/bash/daily-routine.sh sod     # Start-of-Day
+#   scripts/bash/daily-routine.sh eod     # End-of-Day
+#   scripts/bash/daily-routine.sh pre-pr  # Pre-PR health checks
+#   scripts/bash/daily-routine.sh help
 #
 # Part of IPADP Phase 3.2 (L3 upstream sync automation).
 
@@ -27,9 +27,9 @@ EOF
 
 cmd="${1:-help}"
 case "$cmd" in
-    sod)  exec "$SCRIPT_DIR/bash/sod.sh" ;;
-    eod)  exec "$SCRIPT_DIR/bash/eod.sh" ;;
-    pre-pr) exec "$SCRIPT_DIR/bash/pre-pr.sh" ;;
+    sod)  exec "$SCRIPT_DIR/sod.sh" ;;
+    eod)  exec "$SCRIPT_DIR/eod.sh" ;;
+    pre-pr) exec "$SCRIPT_DIR/pre-pr.sh" ;;
     help|-h|--help) usage ;;
     *)
         echo "ERROR: unknown command '$cmd'" >&2
