@@ -5,3 +5,6 @@ tests/shell/test_check_privacy_leaks.bats
 # network-scanning guidance — not a real private-network leak.
 RFC1918 private space
 cloud metadata endpoints
+# Upstream v1.0.8 workflow tests use RFC1918 loopback/private example IPs as
+# test fixtures (tests/test_github_workflows.py) - not real infrastructure.
+^tests/test_github_workflows\.py.*127\.0\.0\.1.*10\.0\.0\.1.*192\.168\.0\.1
