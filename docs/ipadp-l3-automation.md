@@ -7,6 +7,7 @@ the scheduled upstream-sync CI workflow and the repo-local Start-of-Day / End-of
 aligned with upstream `github/spec-kit` while preserving fork-only agent support.
 
 See also:
+
 - `AGENTS.md` — IPADP Conformance & Cline Harmony section (L1/L2/L3 matrix).
 - `specs/metadata.json` — machine-readable project + IPADP metadata.
 - Internal IPADP RFC in the satware AG `wiki` repo

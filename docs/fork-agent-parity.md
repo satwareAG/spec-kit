@@ -55,7 +55,7 @@ Every fork agent subclasses a base class under
 
 ## Inheritance chain
 
-```
+```text
 IntegrationBase
 ├── MarkdownIntegration   ← bob, hermes, cline
 ├── TomlIntegration
@@ -113,5 +113,6 @@ before it reaches `main-speck`.
      subclass and migrate.
 
 See also:
+
 - `AGENTS.md` — overall integration architecture and adding-new-integration guide.
 - `docs/ipadp-l3-automation.md` — upstream-sync + SoD/EoD automation layer.
