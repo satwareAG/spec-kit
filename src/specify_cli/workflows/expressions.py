@@ -416,6 +416,41 @@ def _find_top_level(text: str, token: str) -> int:
     return -1
 
 
+def _is_single_list_literal(expr: str) -> bool:
+    """Return ``True`` only when *expr* is exactly one bracketed list
+    literal -- the opening ``[`` closes at the FINAL character, not partway
+    through the string.
+
+    ``expr.startswith("[") and expr.endswith("]")`` alone also matches a
+    list literal immediately followed by an index suffix, e.g.
+    ``[1,2,3][1]`` (meant as "index 1 of [1,2,3]", i.e. 2). Naively
+    stripping the outer brackets from that string yields the garbage
+    ``1,2,3][1``, which then silently evaluates to ``[1, 2, None]`` instead
+    of raising or resolving the index -- the same "grabs the wrong span"
+    failure mode the string-literal check above guards against, just never
+    given the same treatment for brackets.
+    """
+    if not (expr.startswith("[") and expr.endswith("]")):
+        return False
+    quote: str | None = None
+    depth = 0
+    n = len(expr)
+    for i, ch in enumerate(expr):
+        if quote is not None:
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                return i == n - 1
+    return False
+
+
 def _apply_filter(value: Any, filter_expr: str, namespace: dict[str, Any]) -> Any:
     """Apply a single pipe filter segment to *value*.
 
@@ -450,6 +485,28 @@ def _apply_filter(value: Any, filter_expr: str, namespace: dict[str, Any]) -> An
     # branch above. The greedy ``.+`` still handles literal ``)`` and ``|``
     # inside quoted args.
     filter_match = re.fullmatch(r"(\w+)\((.+)\)", filter_expr)
+    # A multi-argument call is not a supported form: every filter here takes
+    # exactly one argument, and the whole captured argument text was handed to
+    # ``_evaluate_simple_expression`` as ONE expression. "1, 2" is not a valid
+    # expression, so it evaluated to None -- making ``default(1, 2)`` return
+    # None (silently wrong) and ``join(",", "extra")`` raise a message blaming
+    # the separator rather than the extra argument. Fall through to the
+    # unsupported-form error below instead, which names the filter and lists
+    # the accepted forms.
+    #
+    # Use ``_find_top_level``, the same scanner the operator splitting uses: it
+    # skips commas inside quotes AND inside nested brackets, so a single
+    # argument that happens to contain a comma still works -- ``join(", ")``,
+    # ``default("a, b")``, and the list literals the evaluator supports
+    # (``default([1, 2])``).
+    #
+    # List literals are the only container form ``_evaluate_simple_expression``
+    # implements; a mapping such as ``{"a": 1}`` has no branch there and falls
+    # through to dot-path resolution, which yields ``None``. The scanner does
+    # skip commas inside braces too, so nothing here changes if that ever gains
+    # support -- but do not read this comment as a promise that it exists.
+    if filter_match and _find_top_level(filter_match.group(2), ",") != -1:
+        filter_match = None
     if filter_match:
         fname = filter_match.group(1)
         farg = _evaluate_simple_expression(filter_match.group(2).strip(), namespace)
@@ -647,7 +704,7 @@ def _evaluate_simple_expression(expr: str, namespace: dict[str, Any]) -> Any:
         return None
 
     # List literal (simple)
-    if expr.startswith("[") and expr.endswith("]"):
+    if _is_single_list_literal(expr):
         inner = expr[1:-1].strip()
         if not inner:
             return []
