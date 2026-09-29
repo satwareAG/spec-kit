@@ -122,7 +122,13 @@ def test_preset_update_cli_contract():
 
     missing_id = runner.invoke(app, ["preset", "update"])
     assert missing_id.exit_code == 2
-    assert "Missing argument 'preset_id'" in strip_ansi(missing_id.output)
+    # click <8.3 renders the parameter name, click >=8.3 renders the uppercase
+    # metavar; accept both so the contract holds across dependency drift.
+    missing_msg = strip_ansi(missing_id.output)
+    assert (
+        "Missing argument 'preset_id'" in missing_msg
+        or "Missing argument 'PRESET_ID'" in missing_msg
+    )
 
     for unsupported_option in ("--all", "--dry-run"):
         rejected = runner.invoke(
@@ -150,7 +156,12 @@ def test_preset_update_cli_contract():
     help_result = runner.invoke(app, ["preset", "update", "--help"])
     assert help_result.exit_code == 0
     help_output = strip_ansi(help_result.output)
-    assert "Usage: specify preset update [OPTIONS] {preset_id}" in help_output
+    # typer/click <8.3 render "[OPTIONS] {preset_id}", >=8.3 render the
+    # uppercase metavar "[OPTIONS] PRESET_ID"; accept both across dependency drift.
+    assert (
+        "Usage: specify preset update [OPTIONS] {preset_id}" in help_output
+        or "Usage: specify preset update [OPTIONS] PRESET_ID" in help_output
+    )
     assert (
         "Replace an installed preset using the normal remove and add flows."
         in help_output
