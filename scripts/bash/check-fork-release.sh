@@ -34,7 +34,9 @@
 set -euo pipefail
 
 show_help() {
-    sed -n '2,31p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    awk 'NR==1 { next }
+         /^#/ { sub(/^# ?/, ""); print; started=1; next }
+         started { exit }' "${BASH_SOURCE[0]}"
 }
 
 REPO_DIR="."

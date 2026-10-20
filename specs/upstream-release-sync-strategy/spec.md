@@ -159,6 +159,12 @@ gh release create satware-vX.Y.Z+1 --title "satware-vX.Y.Z+1 - upstream vX.Y.Z" 
 release object in the same pass as the tag-cut. For backfills of older tags, pass
 `--latest=false` so the newest release keeps the `latest` marker.
 
+**Enforced since 2026-10-20** (#131): `scripts/bash/check-fork-release.sh`, wired
+into `.github/workflows/upstream-sync-check.yml`, verifies that the newest
+upstream tag merged into `main-speck` has a matching `satware-v*+1` tag and
+release object. A gap opens a rolling `fork-release: satware-vX.Y.Z+1 missing`
+issue; the issue closes automatically once the release exists.
+
 ## Out of Scope
 
 - Automated CI sync (future consideration)

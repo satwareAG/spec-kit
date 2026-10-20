@@ -82,7 +82,7 @@ internal satware AG `wiki` repository (`specs/rfc-interproject-agentic-developme
 |-------|-------------|-----------------------|
 | L1    | `AGENTS.md` + `specs/metadata.json` with upstream/downstream graph | This file + `specs/metadata.json` |
 | L2    | Privacy validation in CI                                          | `scripts/bash/check-privacy-leaks.sh`, `.privacy-whitelist`, `.github/workflows/privacy-check.yml` |
-| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, `.github/workflows/upstream-sync-check.yml`, `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/bash/daily-routine.sh`, `$SATWARE_HARNESS/workflows/sod.protocol.md` / `eod.protocol.md` |
+| L3    | Automated upstream sync + morning protocol integration            | `scripts/bash/check-upstream-sync.sh`, `scripts/bash/check-fork-release.sh`, `.github/workflows/upstream-sync-check.yml`, `scripts/bash/sod.sh`, `scripts/bash/eod.sh`, `scripts/bash/daily-routine.sh`, `$SATWARE_HARNESS/workflows/sod.protocol.md` / `eod.protocol.md` |
 
 ### Harmony with the satware harness (`$SATWARE_HARNESS`)
 
