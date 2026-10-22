@@ -126,6 +126,21 @@ make_repo() {
     grep -q -- "--repo owner/repo" "$GH_LOG"
 }
 
+@test "fork-release: missing tag suggests tag push before gh release create" {
+    # gh release create --verify-tag fails while the tag is absent, and the
+    # releases API 422s on inline-creating `+`-bearing tags (verified
+    # 2026-10-22 during the v1.2.2+1 release): the remediation hint must
+    # start from git, not from the API.
+    local repo="$TEST_TMP/remediate"
+    make_repo "$repo"
+
+    run "$CHECK" --repo "$repo" --repo-slug owner/repo
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"git tag -a satware-v1.0.0+1"* ]]
+    [[ "$output" == *"git push origin satware-v1.0.0+1"* ]]
+    [[ "$output" == *"gh release create satware-v1.0.0+1 --verify-tag"* ]]
+}
+
 @test "fork-release: unknown ref exits 2 as an environment error" {
     local repo="$TEST_TMP/badref"
     make_repo "$repo" "satware-v1.0.0+1"

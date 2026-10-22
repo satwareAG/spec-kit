@@ -26,8 +26,10 @@
 #   2 - Environment/usage error (not a repo, unknown ref, gh missing)
 #
 # Backfill a missing release with --latest=false so the backfill does not
-# hijack `releases/latest`:
+# hijack `releases/latest`. If the fork tag is also missing, push it with
+# git first - the releases API cannot create '+'-bearing tags inline (422):
 #
+#   git tag -a satware-vX.Y.Z+1 <merge-sha> && git push origin satware-vX.Y.Z+1
 #   gh release create satware-vX.Y.Z+1 --verify-tag --latest=false \
 #       --title "satware-vX.Y.Z+1 - upstream vX.Y.Z" --notes-file notes.md
 
@@ -150,6 +152,11 @@ else
         $tag_present || echo "  - tag $fork_tag not found"
         $release_present || echo "  - release $fork_tag not found"
         echo "Backfill (does not hijack releases/latest):"
+        if ! $tag_present; then
+            # The releases API cannot inline-create '+'-bearing tags (422),
+            # and --verify-tag requires the tag to exist: push via git first.
+            echo "  git tag -a $fork_tag <merge-sha> && git push origin $fork_tag"
+        fi
         echo "  gh release create $fork_tag --verify-tag --latest=false \\"
         echo "      --title \"$fork_tag - upstream $upstream_tag\" --notes-file notes.md"
     fi
