@@ -85,14 +85,14 @@ class BundleManifest:
     # -- construction ---------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path: Path) -> "BundleManifest":
+    def from_file(cls, path: Path) -> BundleManifest:
         data = load_yaml(path)
         manifest = cls.from_dict(data)
         manifest.source_path = Path(path)
         return manifest
 
     @classmethod
-    def from_dict(cls, data: Any) -> "BundleManifest":
+    def from_dict(cls, data: Any) -> BundleManifest:
         if not isinstance(data, dict):
             raise BundlerError("Manifest must be a YAML mapping at the top level.")
 
@@ -192,9 +192,17 @@ class BundleManifest:
                 "(lowercase letters, digits, '.', '_', '-'; no path separators)."
             )
 
+        seen_components: set[tuple[str, str]] = set()
         for ref in self.components:
             if not ref.id:
                 errors.append(f"A {ref.kind[:-1]} entry is missing its 'id'.")
+            elif (ref.kind, ref.id) in seen_components:
+                errors.append(
+                    f"Duplicate {ref.kind[:-1]} '{ref.id}' in provides; "
+                    "declare each component ID only once per kind."
+                )
+            else:
+                seen_components.add((ref.kind, ref.id))
             if ref.kind != "steps" and not ref.version:
                 errors.append(
                     f"{ref.kind[:-1]} '{ref.id or '<unknown>'}' must be pinned to a 'version'."
@@ -202,6 +210,17 @@ class BundleManifest:
             if ref.version and not is_semver(ref.version):
                 errors.append(
                     f"{ref.kind[:-1]} '{ref.id}' has invalid version '{ref.version}'."
+                )
+            # Preset and extension installs refuse a priority below 1, which
+            # would otherwise surface only mid-install, after earlier components.
+            if (
+                ref.kind in ("extensions", "presets")
+                and ref.priority is not None
+                and ref.priority < 1
+            ):
+                errors.append(
+                    f"{ref.kind[:-1]} '{ref.id}' priority must be 1 or higher, "
+                    f"got {ref.priority}."
                 )
 
         for ref in self.presets:

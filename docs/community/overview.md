@@ -1,10 +1,13 @@
 # Community
 
-The Spec Kit community builds extensions, presets, bundles, walkthroughs, and companion projects that expand what you can do with Spec-Driven Development. All community contributions are independently created and maintained by their respective authors.
+The Spec Kit community builds extensions, presets, bundles, workflow steps, walkthroughs, and companion projects that expand what you can do with Spec-Driven Development. All community contributions are independently created and maintained by their respective authors.
 
 > [!NOTE]
 > Review community source code before installation and use it at your own
 > discretion. A catalog listing is not an audit or endorsement.
+
+Learn how discovery-only community sources and approved private sources fit
+together in the [catalog reference](../reference/catalogs.md).
 
 ## Extensions
 
@@ -27,7 +30,8 @@ Bundles compose extensions, presets, workflows, and steps into role or team stac
 ## Workflow step types
 
 Workflow step types add reusable executable behavior that workflows can select
-with `type:`.
+with `type:`. The community catalog is discovery-only; vet a step's source
+before installing or running it.
 
 [Submit a community workflow step type →](workflow-steps.md)
 
