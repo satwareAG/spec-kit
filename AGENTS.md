@@ -62,6 +62,12 @@ Before authoring commits, opening PRs, or posting review comments, read
 Agent-authored commits and AI-generated PRs and comments each require their
 own disclosure; a PR-body disclosure alone does not cover later activity.
 
+Attribution is a session-scoped factual claim, not boilerplate (#125): before
+`gh pr create` or any disclosure footer, resolve the operator identity in the
+**current** session (`gh api user`, falling back to `git config user.name`).
+Never inherit a human name from a prior PR or template; if the identity cannot
+be resolved, omit the name and say so.
+
 ## Other Contribution Guidance
 
 For contribution or repository-workflow questions not covered above, or when
