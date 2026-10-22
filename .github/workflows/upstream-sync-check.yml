@@ -90,3 +90,101 @@ jobs:
       - name: Report in-sync
         if: steps.check.outputs.synced != 'False'
         run: echo "✅ main-speck is up to date with upstream (${{ steps.check.outputs.latest }})."
+
+      # Fork release guard (#131): a merged upstream sync MUST cut an annotated
+      # `satware-vX.Y.Z+1` tag AND publish a GitHub release object in the same
+      # pass (#112). This step detects the gap instead of relying on a re-read
+      # of the sync spec.
+      - name: Check fork release for the merged upstream tag (#131)
+        id: fork_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin --tags --force --quiet
+          output=$(./scripts/bash/check-fork-release.sh --json || true)
+          echo "result=$output" >> "$GITHUB_OUTPUT"
+          echo "$output"
+          status=$(echo "$output" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status','error'))")
+          if [ "$status" = "error" ]; then
+            echo "::error::fork release guard could not complete"
+            exit 1
+          fi
+          for key in ok expected_fork_tag upstream_tag tag_present release_present; do
+            value=$(echo "$output" | python3 -c "import json,sys;print(json.load(sys.stdin).get('$key',''))")
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Open or update fork-release tracking issue
+        if: steps.fork_release.outputs.ok == 'False'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.fork_release.outputs.expected_fork_tag }}
+          UPSTREAM: ${{ steps.fork_release.outputs.upstream_tag }}
+          TAG_PRESENT: ${{ steps.fork_release.outputs.tag_present }}
+          RELEASE_PRESENT: ${{ steps.fork_release.outputs.release_present }}
+          RESULT: ${{ steps.fork_release.outputs.result }}
+        run: |
+          set -euo pipefail
+          title="fork-release: ${TAG} missing"
+          body=$(printf '%s\n' \
+            "A merged upstream sync has no complete fork release (#131)." \
+            "" \
+            "- **Merged upstream tag:** \`${UPSTREAM}\`" \
+            "- **Expected fork tag:** \`${TAG}\`" \
+            "- **Tag present:** \`${TAG_PRESENT}\`" \
+            "- **Release present:** \`${RELEASE_PRESENT}\`" \
+            "- **Raw guard output:**" \
+            "" \
+            '```json' \
+            "${RESULT}" \
+            '```' \
+            "" \
+            "### Action" \
+            "1. Tag the merge commit if missing: \`git tag -a ${TAG} -m \"${TAG} - upstream ${UPSTREAM}\" <merge-commit> && git push origin ${TAG}\`" \
+            "2. Publish the release. Backfill with \`--latest=false\` so it does not hijack \`releases/latest\`:" \
+            "   \`gh release create ${TAG} --verify-tag --latest=false --title \"${TAG} - upstream ${UPSTREAM}\" --notes-file notes.md\`" \
+            "3. Re-verify: \`./scripts/bash/check-fork-release.sh --json\`" \
+            "" \
+            "_This issue is maintained automatically by \`.github/workflows/upstream-sync-check.yml\`._")
+
+          # Find an existing open issue for this exact title (idempotent).
+          # Label-based listing, not `--search`: the tag contains "+", which
+          # the search tokenizer treats as a separator.
+          gh label create fork-release --repo "$GITHUB_REPOSITORY" \
+            --color D93F0B --description "Merged upstream sync without a fork release (#131)" 2>/dev/null || true
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" \
+            --state open --label fork-release --limit 100 \
+            --json number,title --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+
+          if [ -n "$existing" ]; then
+            echo "Updating existing issue #$existing"
+            gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            echo "Creating new tracking issue"
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$title" --body "$body" \
+              --label fork-release
+          fi
+
+      - name: Close resolved fork-release issue
+        if: steps.fork_release.outputs.ok == 'True'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.fork_release.outputs.expected_fork_tag }}
+        run: |
+          set -euo pipefail
+          title="fork-release: ${TAG} missing"
+          resolved=""
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --label fork-release --limit 100 >/dev/null 2>&1; then
+            resolved=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+              --label fork-release --limit 100 --json number,title \
+              --jq ".[] | select(.title==\"$title\") | .number" | head -n1)
+          fi
+          if [ -n "$resolved" ]; then
+            gh issue close "$resolved" --repo "$GITHUB_REPOSITORY" \
+              --comment "Guard is green: \`${TAG}\` exists with a published release. Closing automatically."
+          else
+            echo "No open fork-release issue for ${TAG}."
+          fi

@@ -98,9 +98,53 @@ bash scripts/bash/daily-routine.sh eod
 bash scripts/bash/check-privacy-leaks.sh .
 bash scripts/bash/check-upstream-sync.sh
 bash scripts/bash/check-upstream-sync.sh --json
+bash scripts/bash/check-fork-release.sh --json
 ```
 
-## 4. Failure modes and manual override
+## 4. Fork release guard (#131)
+
+**File:** `scripts/bash/check-fork-release.sh`, wired into
+`.github/workflows/upstream-sync-check.yml` (daily + manual dispatch).
+
+### Purpose
+
+The sync procedure makes the fork release step mandatory (#112): every merged
+upstream sync must cut `satware-vX.Y.Z+1` **and** publish a GitHub release
+object. Nothing enforced it, and it was skipped for v1.0.7, v1.0.12 and
+v1.1.2. The guard finds the newest upstream tag merged into the checked ref
+and fails when the matching fork tag or release object is absent.
+
+### Behavior
+
+1. Runs after the upstream-sync detection step, checking out `main-speck`
+   with full history and tags.
+2. `check-fork-release.sh --json` reports
+   `{ok, status, upstream_tag, expected_fork_tag, tag_present, release_present}`.
+3. On a gap, the workflow opens/updates exactly one rolling issue titled
+   `fork-release: satware-vX.Y.Z+1 missing` (label `fork-release`) carrying
+   the backfill commands.
+4. When the tag and release exist, the matching issue is closed
+   automatically, so the thread cannot go stale.
+
+### Backfill a missing release
+
+Always publish backfills with `--latest=false`; otherwise an old tag hijacks
+`releases/latest` and the CLI provenance chain resolves the wrong version.
+
+```bash
+gh release create satware-v1.1.2+1 --verify-tag --latest=false \
+  --title "satware-v1.1.2+1 - upstream v1.1.2" --notes-file notes.md
+```
+
+### Exit codes
+
+| Code | Meaning | Workflow effect |
+|---|---|---|
+| 0 | Fork tag and release present, or no upstream tag merged | Green |
+| 1 | Merged upstream tag lacks a fork tag and/or release | Opens/updates the tracking issue |
+| 2 | Environment/usage error (not a repo, unknown ref, `gh` missing) | Job fails, no issue written |
+
+## 5. Failure modes and manual override
 
 | Condition | Effect | Manual override |
 |---|---|---|
@@ -108,8 +152,9 @@ bash scripts/bash/check-upstream-sync.sh --json
 | `upstream` remote missing | `check-upstream-sync.sh` exits non-zero. | `git remote add upstream https://github.com/github/spec-kit` then `git fetch upstream --tags`. |
 | Privacy violation detected | SoD/EoD hook fails; CI `privacy-check` workflow blocks merge. | Fix the leak or extend `.privacy-whitelist` with justification. |
 | Rolling upstream-sync issue obsolete | Close it manually. | The scheduled workflow re-creates/updates the issue only on a strictly newer upstream tag. |
+| Fork release missing after a sync merge | Guard opens `fork-release: ... missing` and stays red. | Cut the tag, publish the release with `--latest=false`, re-run the guard. |
 
-## 5. Conformance
+## 6. Conformance
 
 These artifacts satisfy the L3 row of the IPADP conformance matrix in
 `AGENTS.md`: automated upstream sync detection plus morning-protocol integration.
