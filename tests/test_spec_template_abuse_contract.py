@@ -56,6 +56,14 @@ def test_abuse_section_mandates_negative_scenarios_and_fr_mapping() -> None:
     assert "FR-" in section
 
 
+def test_abuse_section_references_owasp_a04() -> None:
+    """The section must cross-reference OWASP Top 10 (2021) A04:2021 (Insecure Design)."""
+    text = SPEC_TEMPLATE.read_text(encoding="utf-8")
+    section = _extract_section(text, "## Abuse & Misuse Cases", "## Requirements")
+    assert "A04:2021" in section
+    assert "Insecure Design" in section
+
+
 def test_clarify_command_forces_security_abuse_question() -> None:
     """Clarify must force the abuse/misuse question when Security is Missing."""
     text = CLARIFY_COMMAND.read_text(encoding="utf-8")
