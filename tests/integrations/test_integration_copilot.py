@@ -306,6 +306,7 @@ class TestCopilotCommandsMode:
             ".specify/integrations/copilot.manifest.json",
             ".specify/integrations/speckit.manifest.json",
             ".specify/.gitignore",
+            ".specify/scripts/bash/check-fork-release.sh",
             ".specify/scripts/bash/check-prerequisites.sh",
             ".specify/scripts/bash/check-privacy-leaks.sh",
             ".specify/scripts/bash/check-upstream-sync.sh",
@@ -890,6 +891,7 @@ class TestCopilotSkillsMode:
             ".specify/integrations/speckit.manifest.json",
             ".specify/.gitignore",
             # Scripts (sh)
+            ".specify/scripts/bash/check-fork-release.sh",
             ".specify/scripts/bash/check-prerequisites.sh",
             ".specify/scripts/bash/check-privacy-leaks.sh",
             ".specify/scripts/bash/check-upstream-sync.sh",
