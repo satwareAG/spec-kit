@@ -78,6 +78,28 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Abuse & Misuse Cases *(mandatory)*
+
+<!--
+  ACTION REQUIRED: The content in this section represents placeholders.
+  Replace them with concrete adversarial scenarios for THIS feature.
+  A misuse case with no matching requirement ships as green code:
+  map every case to a functional requirement (FR-XXX) below.
+-->
+
+Adversarial scenarios describing how the feature could be **abused**, not
+just used. Write each case as a negative Given/When/Then scenario and map
+it to the functional requirement that denies the abuse. Cover at least
+these categories:
+
+- **Unauthorized access**: cross-user or cross-tenant object access (IDOR/BOLA), privilege escalation, use of another principal's session or token
+- **Input & injection**: malicious input through every user-controlled surface (injection, path traversal, oversized or malformed payloads)
+- **Rate & resource abuse**: unbounded or automated request floods, bulk operations, resource exhaustion
+
+Example:
+
+- **AM-001**: **Given** an authenticated user A, **When** A requests user B's order by its ID, **Then** the system denies access and logs the attempt (mapped to FR-XXX)
+
 ## Requirements *(mandatory)*
 
 <!--

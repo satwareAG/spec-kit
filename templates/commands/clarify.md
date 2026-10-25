@@ -133,6 +133,7 @@ Execution steps:
        - A one-word / short‑phrase answer (explicitly constrain: "Answer in <=5 words").
     - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
     - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
+    - Security gap forced-first rule: if the coverage scan marks `Security & privacy` (Non-Functional Quality Attributes) as Missing or Partial, the abuse/misuse question derived from the spec's `## Abuse & Misuse Cases` section MUST become the first clarification question, ahead of the (Impact * Uncertainty) ranking.
     - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
     - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
     - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
