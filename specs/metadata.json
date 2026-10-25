@@ -90,7 +90,7 @@
         "visibility": "private",
         "ipadp_project": 8,
         "local_path": "~/internal/wiki",
-        "relationship": "downstream: coordination hub; hosts the IPADP RFC this repo conforms to"
+        "relationship": "downstream: wiki consumes SDD methodology from this repo; coordination hub hosting the IPADP RFC this repo conforms to"
       },
       {
         "repo": "satware/amicron-platform",
