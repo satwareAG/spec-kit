@@ -1,45 +1,23 @@
 {
   "name": "spec-kit",
+  "project": "satwareAG/spec-kit",
   "version": "1.2.3",
   "fork_version": "satware-v1.2.3+1",
   "sdd_source": "https://github.com/satwareAG/spec-kit",
   "forge": "github",
   "visibility": "public",
+  "conformance_level": "L3",
+  "local_path": "~/external/spec-kit",
   "ipadp": {
     "project_number": 6,
-    "conformance_level": "L3",
     "issue_tracker": "https://github.com/satwareAG/spec-kit/issues",
     "rfc_location": "<internal>/wiki/specs/rfc-interproject-agentic-development.md"
   },
-  "upstream": {
-    "github/spec-kit": {
-      "url": "https://github.com/github/spec-kit",
-      "forge": "github",
-      "channel": "gh:issues",
-      "paths": {
-        "specs": "specs/",
-        "tests": "tests/",
-        "code": "src/"
-      }
-    }
-  },
-  "downstream": {
-    "harness": {
-      "forge": "gitea",
-      "visibility": "private",
-      "local_path": "$SATWARE_HARNESS",
-      "role": "consumes SDD methodology + templates"
-    },
-    "wiki": {
-      "forge": "gitea",
-      "visibility": "private",
-      "role": "coordination hub; hosts IPADP RFC"
-    },
-    "amicron-platform": {
-      "forge": "gitlab",
-      "visibility": "private",
-      "role": "consumes SDD methodology"
-    }
+  "ci_status": {
+    "state": "degraded",
+    "issue": 150,
+    "since": "2026-10-14",
+    "note": "GitHub Actions disabled at account/org level (repo-level API reports enabled:true, dispatch returns 422). privacy-check and upstream-sync-check run locally via scripts/bash/daily-routine.sh; L2/L3 CI-validation claims are satisfied locally until the blocker clears."
   },
   "custom_integrations": [
     "agy",
@@ -77,5 +55,53 @@
     ],
     "symlink_script": "$SATWARE_HARNESS/scripts/env-setup-symlinks.sh"
   },
-  "project_version": "1.2.3"
+  "dependencies": {
+    "upstream": [
+      {
+        "repo": "github/spec-kit",
+        "name": "github/spec-kit",
+        "forge": "github",
+        "url": "https://github.com/github/spec-kit",
+        "channel": "gh:issues",
+        "relationship": "fork source: upstream releases flow into this fork (tracked via check-upstream-sync.sh); fork adds custom agent integrations",
+        "paths": {
+          "specs": "specs/",
+          "tests": "tests/",
+          "code": "src/"
+        }
+      }
+    ],
+    "downstream": [
+      {
+        "repo": "satware.ai/harness",
+        "name": "harness",
+        "forge": "gitea",
+        "channel": "gitea:issues",
+        "visibility": "private",
+        "ipadp_project": 7,
+        "local_path": "~/internal/harness",
+        "relationship": "downstream: harness consumes SDD methodology + templates from this repo"
+      },
+      {
+        "repo": "satware.ai/wiki",
+        "name": "wiki",
+        "forge": "gitea",
+        "channel": "gitea:issues",
+        "visibility": "private",
+        "ipadp_project": 8,
+        "local_path": "~/internal/wiki",
+        "relationship": "downstream: coordination hub; hosts the IPADP RFC this repo conforms to"
+      },
+      {
+        "repo": "satware/amicron-platform",
+        "name": "amicron-platform",
+        "forge": "gitlab",
+        "channel": "glab:issues",
+        "visibility": "private",
+        "ipadp_project": 5,
+        "local_path": "~/internal/platform/amicron-platform",
+        "relationship": "downstream: consumes SDD methodology from this repo"
+      }
+    ]
+  }
 }
