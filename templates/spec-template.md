@@ -104,6 +104,10 @@ to objects owned by other users for principals without ownership`).
    happens when one client issues very many requests or requests very
    large resources?
 
+These categories target OWASP Top 10 (2021) A04:2021, Insecure Design: the
+requirement mapped to each case is the design-level defense that no review
+or CI gate can substitute.
+
 **Format:**
 
 - **AMR-001**: Given [attacker authenticated as user A], **When** [they
