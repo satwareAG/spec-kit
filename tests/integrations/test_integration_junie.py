@@ -216,6 +216,7 @@ class TestJunieIntegration(MarkdownIntegrationTests):
 
         if script_variant == "sh":
             for name in [
+                "check-fork-release.sh",
                 "check-prerequisites.sh",
                 "check-privacy-leaks.sh",
                 "check-upstream-sync.sh",

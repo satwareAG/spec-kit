@@ -133,6 +133,7 @@ Execution steps:
        - A one-word / short‑phrase answer (explicitly constrain: "Answer in <=5 words").
     - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
     - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
+    - Security abuse/misuse override: if the "Security & privacy" category is marked Partial or Missing, force an abuse/misuse clarification question (cross-user object access / IDOR, injection surfaces, rate & resource abuse against the spec's Abuse & Misuse Cases section) as question #1 in the queue, ahead of the (Impact * Uncertainty) ranking.
     - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
     - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
     - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.

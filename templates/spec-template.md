@@ -78,6 +78,38 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Abuse & Misuse Cases *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Fill in negative scenarios for every required category
+  below. A misuse case that is not written here - or not mapped to a
+  functional requirement - ships as green code: no review or CI gate can
+  enforce a requirement that was never stated. If a category genuinely does
+  not apply, state why explicitly.
+-->
+
+Write each case as a Given/When/Then **negative** scenario and map it to the
+requirement that defends against it (e.g. `FR-XXX: System MUST deny access
+to objects owned by other users for principals without ownership`).
+
+**Required categories:**
+
+1. **Unauthorized access** - cross-user / cross-tenant object access
+   (IDOR/BOLA): what happens when user A requests user B's resources by
+   manipulating identifiers?
+2. **Input & injection** - malicious input through every user-controlled
+   surface: what happens when a field receives crafted payloads (SQL,
+   script, path traversal, command)?
+3. **Rate & resource abuse** - unbounded calls or bulk operations: what
+   happens when one client issues very many requests or requests very
+   large resources?
+
+**Format:**
+
+- **AMR-001**: Given [attacker authenticated as user A], **When** [they
+  request resource `id` owned by user B], **Then** [system MUST deny access
+  without leaking existence, and log the attempt] -> FR-XXX
+
 ## Requirements *(mandatory)*
 
 <!--
