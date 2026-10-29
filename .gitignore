@@ -51,6 +51,9 @@ docs/dev
 .specify/extensions/.backup/
 .specify/extensions/*/local-config.yml
 
+# Agent tooling session caches (#171)
+.playwright-cli/
+
 # The following directories/file are intentionally ignored so that they are not accidentally
 # committed to the repository. They contain the scaffolding `specify init --integration copilot`
 # (or other agents) does and they are meant for dogfooding Spec Kit during its own feature development.
