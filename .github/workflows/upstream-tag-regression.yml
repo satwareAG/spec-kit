@@ -6,8 +6,14 @@ name: Upstream Tag Regression
 #
 # Triggers:
 #   - workflow_dispatch with a tag input (manual/baseline)
-#   - issues.opened/edited when an `upstream-sync` issue is filed by
+#   - issues.opened/edited/labeled when an `upstream-sync` issue is filed by
 #     upstream-sync-check.yml (the rolling tracking issue from IPADP Phase 3.1)
+#
+# #175: the issues trigger path used to fail hard (red X on the rolling
+# issue) when the tag could not be parsed or when pytest was not installed.
+# The job now gates on the title shape, skips neutrally when no tag can be
+# resolved from an issue event, and installs the test environment via
+# `uv sync --extra test` before invoking pytest through the own-tree venv.
 
 on:
   workflow_dispatch:
@@ -26,11 +32,14 @@ permissions:
 jobs:
   regression:
     # Run on manual dispatch, OR when the triggering issue carries the
-    # `upstream-sync` label (filter out all unrelated issue events).
+    # `upstream-sync` label AND its title carries the parseable shape
+    # (`upstream-sync: vX.Y.Z ...`). Anything else is out of scope and the
+    # job skips without noise (#175).
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issues' &&
-       contains(github.event.issue.labels.*.name, 'upstream-sync'))
+       contains(github.event.issue.labels.*.name, 'upstream-sync') &&
+       contains(github.event.issue.title, 'upstream-sync:'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -56,13 +65,20 @@ jobs:
             TAG="$(printf '%s' "$ISSUE_TITLE" | sed -nE 's/.*upstream-sync:[[:space:]]*(v[0-9][^ ]*).*/\1/p')"
           fi
           if [ -z "$TAG" ]; then
-            echo "::error::Could not determine upstream tag from event."
-            exit 1
+            if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+              echo "::error::Could not determine upstream tag: --input tag is empty."
+              exit 1
+            fi
+            # Issue event with an unparsable title: skip neutrally (#175).
+            echo "::warning::No upstream tag in issue title, skipping regression check."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Resolved tag: $TAG"
 
       - name: Add upstream remote and fetch tag
+        if: steps.tag.outputs.tag != ''
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
@@ -73,6 +89,7 @@ jobs:
           git config user.name  "ipadp-regression-bot"
 
       - name: Dry-merge upstream tag into throwaway branch
+        if: steps.tag.outputs.tag != ''
         id: merge
         env:
           TAG: ${{ steps.tag.outputs.tag }}
@@ -88,49 +105,59 @@ jobs:
           fi
 
       - name: Install uv
+        if: steps.tag.outputs.tag != ''
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
 
+      - name: Install test environment
+        if: steps.tag.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          # Own-tree venv with dev extras; AGENTS.md forbids bare `uv run pytest`
+          # (stale editable .pth from a sibling worktree can shadow the import).
+          uv sync --extra test
+
       - name: Run integration tests
+        if: steps.tag.outputs.tag != ''
         id: pytest
         continue-on-error: true
         run: |
-          set -o pipefail
-          uv run pytest tests/integrations/ -x -q 2>&1 | tee pytest.out
+          # Actions' default run shell is `bash -eo pipefail`; without `set +e`
+          # a failing pipeline exits the step before exit_code is recorded,
+          # which left PYTEST_EXIT empty and miscomposed the report (#175).
+          set +e
+          .venv/bin/python -m pytest tests/integrations/ -x -q 2>&1 | tee pytest.out
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
-      - name: Identify broken fork agent (on failure)
-        id: diagnose
-        if: steps.pytest.outputs.exit_code != '0'
-        run: |
-          set -euo pipefail
-          FORK_AGENTS="agy bob kimi hermes cline"
-          BROKEN=""
-          for a in $FORK_AGENTS; do
-            if grep -qE "test_integration_${a}\b|integrations/${a}/" pytest.out; then
-              BROKEN="$BROKEN $a"
-            fi
-          done
-          BROKEN="$(echo "$BROKEN" | xargs || true)"
-          [ -z "$BROKEN" ] && BROKEN="(none identified — upstream-side failure)"
-          echo "broken=$BROKEN" >> "$GITHUB_OUTPUT"
-
       - name: Compose result comment
-        id: comment
+        if: steps.tag.outputs.tag != ''
         env:
           TAG: ${{ steps.tag.outputs.tag }}
           MERGE_STATUS: ${{ steps.merge.outputs.merge_status }}
           PYTEST_EXIT: ${{ steps.pytest.outputs.exit_code }}
-          BROKEN: ${{ steps.diagnose.outputs.broken }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
+          # Inline diagnosis (#175): grep inside an `if` is condition context,
+          # so a missing pytest.out (pytest step skipped) is a false, not an
+          # error under set -e.
+          FORK_AGENTS="agy bob kimi hermes cline"
+          BROKEN=""
+          if [ -n "$PYTEST_EXIT" ] && [ "$PYTEST_EXIT" != "0" ]; then
+            for a in $FORK_AGENTS; do
+              if grep -qE "test_integration_${a}\b|integrations/${a}/" pytest.out; then
+                BROKEN="$BROKEN $a"
+              fi
+            done
+            BROKEN="$(echo "$BROKEN" | xargs || true)"
+            [ -z "$BROKEN" ] && BROKEN="(none identified — upstream-side failure)"
+          fi
           {
             echo "### 🤖 Upstream regression report — \`$TAG\`"
             echo
             if [ "$MERGE_STATUS" = "clean" ] && [ "$PYTEST_EXIT" = "0" ]; then
-              echo "✅ **All fork agents pass on \`$TAG\`.** Dry-merge clean, 835 integration tests green."
+              echo "✅ **All fork agents pass on \`$TAG\`.** Dry-merge clean, integration suite green."
             elif [ "$MERGE_STATUS" = "conflict" ]; then
               echo "⚠️ **Merge conflict** during dry-merge of \`$TAG\` into \`main-speck\`. Manual resolution required."
               if [ "$PYTEST_EXIT" != "0" ]; then
@@ -148,7 +175,7 @@ jobs:
           cat comment.md
 
       - name: Post result on tracking issue
-        if: github.event_name == 'issues'
+        if: github.event_name == 'issues' && steps.tag.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -156,11 +183,13 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file comment.md
 
       - name: Surface result on manual dispatch
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && steps.tag.outputs.tag != ''
         run: cat comment.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail job if tests failed
-        if: steps.pytest.outputs.exit_code != '0' || steps.merge.outputs.merge_status == 'conflict'
+        if: >-
+          always() && steps.tag.outputs.tag != '' &&
+          (steps.pytest.outputs.exit_code != '0' || steps.merge.outputs.merge_status == 'conflict')
         run: |
           echo "::error::Regression check failed for ${{ steps.tag.outputs.tag }} (see comment)."
           exit 1
