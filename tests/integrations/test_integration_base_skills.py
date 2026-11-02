@@ -492,6 +492,7 @@ class SkillsIntegrationTests:
         if script_variant == "sh":
             files += [
                 ".specify/scripts/bash/check-fork-release.sh",
+                ".specify/scripts/bash/check-metadata-schema.sh",
                 ".specify/scripts/bash/check-prerequisites.sh",
                 ".specify/scripts/bash/check-privacy-leaks.sh",
                 ".specify/scripts/bash/check-upstream-sync.sh",

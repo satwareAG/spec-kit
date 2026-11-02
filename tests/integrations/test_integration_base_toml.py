@@ -493,6 +493,7 @@ class TomlIntegrationTests:
         if script_variant == "sh":
             for name in [
                 "check-fork-release.sh",
+                "check-metadata-schema.sh",
                 "check-prerequisites.sh",
                 "check-privacy-leaks.sh",
                 "check-upstream-sync.sh",
