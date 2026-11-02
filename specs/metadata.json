@@ -14,10 +14,10 @@
     "rfc_location": "<internal>/wiki/specs/rfc-interproject-agentic-development.md"
   },
   "ci_status": {
-    "state": "degraded",
+    "state": "operational",
     "issue": 150,
-    "since": "2026-10-14",
-    "note": "GitHub Actions disabled at account/org level (repo-level API reports enabled:true, dispatch returns 422). privacy-check and upstream-sync-check run locally via scripts/bash/daily-routine.sh; L2/L3 CI-validation claims are satisfied locally until the blocker clears."
+    "since": "2026-10-28",
+    "note": "Blocker cleared, issue #150 closed 2026-10-28: GitHub Actions runs again (13/13 checks on PRs #173/#174; matrix green on #179). Local gates (privacy-check, upstream-sync-check via scripts/bash/daily-routine.sh pre-pr) remain part of the standing chain."
   },
   "custom_integrations": [
     "agy",
