@@ -141,7 +141,7 @@ See `docs/fork-agent-parity.md` for the fork-agent parity audit (IPADP Phase 4.3
 5. **Implement** — make the tests pass with the minimum change set.
 6. **Checklists** — fulfill `templates/checklist-template.md` prior to merge.
 7. **Privacy + upstream sync** — verify via the two scripts above.
-8. **Pre-PR check** — run `bash scripts/bash/daily-routine.sh pre-pr` before pushing to catch lint/test failures locally. Runs ruff, integration tests, privacy check, and upstream sync in a single pass.
+8. **Pre-PR check** — run `bash scripts/bash/daily-routine.sh pre-pr` before pushing to catch lint/test failures locally. Runs ruff, integration tests, privacy check, metadata-schema validation, and upstream sync in a single pass.
 9. **Commit + PR** — follow conventional commits (`<type>(<scope>): <msg>`) with signed trailers where required.
 
 ---
