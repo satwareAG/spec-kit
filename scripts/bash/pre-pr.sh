@@ -22,7 +22,7 @@ fail=0
 
 # 1. Ruff lint (matches CI: uvx ruff@0.15.0 check src tests)
 echo ""
-echo "[1/5] ruff check src/ tests/..."
+echo "[1/6] ruff check src/ tests/..."
 if uvx ruff@0.15.0 check "$REPO_ROOT/src/" "$REPO_ROOT/tests/"; then
     echo "   ruff passed"
 else
@@ -32,7 +32,7 @@ fi
 
 # 2. Integration tests (stop on first failure, quiet)
 echo ""
-echo "[2/5] pytest tests/integrations/ ..."
+echo "[2/6] pytest tests/integrations/ ..."
 if (cd "$REPO_ROOT" && uv run pytest tests/integrations/ -x -q --no-header); then
     echo "   tests passed"
 else
@@ -42,7 +42,7 @@ fi
 
 # 3. Privacy leak check
 echo ""
-echo "[3/5] check-privacy-leaks.sh..."
+echo "[3/6] check-privacy-leaks.sh..."
 if "$REPO_ROOT/scripts/bash/check-privacy-leaks.sh" "$REPO_ROOT"; then
     echo "   privacy check passed"
 else
@@ -52,7 +52,7 @@ fi
 
 # 4. Upstream sync check
 echo ""
-echo "[4/5] check-upstream-sync.sh..."
+echo "[4/6] check-upstream-sync.sh..."
 if "$REPO_ROOT/scripts/bash/check-upstream-sync.sh"; then
     echo "   upstream-sync check completed"
 else
@@ -64,7 +64,7 @@ fi
 #    (rules/tool.provenance.md in the satware harness). Fatal: a stale upstream
 #    or editable install silently shadowing the fork is a real bug class.
 echo ""
-echo "[5/5] check-speckit-cli.sh (tool provenance)..."
+echo "[5/6] check-speckit-cli.sh (tool provenance)..."
 if [ -n "${SATWARE_HARNESS:-}" ] && [ -x "$SATWARE_HARNESS/scripts/check-speckit-cli.sh" ]; then
     if "$SATWARE_HARNESS/scripts/check-speckit-cli.sh"; then
         echo "   provenance check passed"
@@ -74,6 +74,19 @@ if [ -n "${SATWARE_HARNESS:-}" ] && [ -x "$SATWARE_HARNESS/scripts/check-speckit
     fi
 else
     echo "   skipped (SATWARE_HARNESS not set or check-speckit-cli.sh not found)"
+fi
+
+# 6. Metadata schema validation (#167): specs/metadata.json drives SOD scans,
+#    release guards, and fleet W2/W3 validators; a malformed field silently
+#    breaks every consumer. Includes the public-repo privacy shape rule
+#    (no typed downstream[] on a public repo - #168 backstop).
+echo ""
+echo "[6/6] check-metadata-schema.sh..."
+if "$REPO_ROOT/scripts/bash/check-metadata-schema.sh"; then
+    echo "   metadata schema passed"
+else
+    echo "   metadata schema FAILED"
+    fail=1
 fi
 
 echo ""
