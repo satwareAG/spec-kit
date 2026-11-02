@@ -71,37 +71,8 @@
         }
       }
     ],
-    "downstream": [
-      {
-        "repo": "satware.ai/harness",
-        "name": "harness",
-        "forge": "gitea",
-        "channel": "gitea:issues",
-        "visibility": "private",
-        "ipadp_project": 7,
-        "local_path": "~/internal/harness",
-        "relationship": "downstream: harness consumes SDD methodology + templates from this repo"
-      },
-      {
-        "repo": "satware.ai/wiki",
-        "name": "wiki",
-        "forge": "gitea",
-        "channel": "gitea:issues",
-        "visibility": "private",
-        "ipadp_project": 8,
-        "local_path": "~/internal/wiki",
-        "relationship": "downstream: wiki consumes SDD methodology from this repo; coordination hub hosting the IPADP RFC this repo conforms to"
-      },
-      {
-        "repo": "satware/amicron-platform",
-        "name": "amicron-platform",
-        "forge": "gitlab",
-        "channel": "glab:issues",
-        "visibility": "private",
-        "ipadp_project": 5,
-        "local_path": "~/internal/platform/amicron-platform",
-        "relationship": "downstream: consumes SDD methodology from this repo"
-      }
-    ]
+    "downstream": {
+      "note": "Typed fan-out withheld from this public copy per IPADP privacy boundary and #6/#168: this repo must not list private downstream consumers. The authoritative downstream map lives in the private coordination hub (IPADP RFC)."
+    }
   }
 }

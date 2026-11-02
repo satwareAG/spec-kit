@@ -50,6 +50,13 @@ PATTERNS=(
   $'172\\.(1[6-9]|2[0-9]|3[0-1])\\.[0-9]+\\.[0-9]+\tPrivate IP (172.16-31.x.x)'
   $'192\\.168\\.[0-9]+\\.[0-9]+\tPrivate IP (192.168.x.x)'
   $'(api[_-]?key|apikey|secret|token|password|passwd)\\s*[:=]\\s*['\''"][^'\''"]{8,}\tPotential hardcoded credential'
+  # #168: private downstream identifiers and internal filesystem layout must
+  # not appear anywhere in the public repo. Content-only patterns (git grep
+  # matches content, not the path:line prefix); sanctioned occurrences are
+  # whitelisted in .privacy-whitelist.
+  $'satware\\.ai/(harness|wiki)\tPrivate downstream repo identifier (#168)'
+  $'~/internal/\tInternal filesystem path leaked (#168)'
+  $'satware/amicron-platform\tPrivate downstream repo identifier (#168)'
 )
 
 # --- Load whitelist exclusions ---
