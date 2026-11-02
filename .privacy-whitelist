@@ -8,3 +8,11 @@ cloud metadata endpoints
 # Upstream v1.0.8 workflow tests use RFC1918 loopback/private example IPs as
 # test fixtures (tests/test_github_workflows.py) - not real infrastructure.
 ^tests/test_github_workflows\.py.*127\.0\.0\.1.*10\.0\.0\.1.*192\.168\.0\.1
+# #168 negative-control fixture: intentional private-downstream leak inside
+# the privacy checker's own test - not real metadata.
+^tests/shell/test_check_privacy_leaks\.bats.*satware\.ai/harness
+# sod.sh/eod.sh document the harness checkout default path in comments -
+# ecosystem plumbing, not a downstream fan-out. (The whitelist line itself
+# contains the same string and is whitelisted here.)
+^scripts/bash/(sod|eod)\.sh.*~/internal/harness
+^\.privacy-whitelist.*~/internal/
