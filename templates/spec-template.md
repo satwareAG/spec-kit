@@ -10,6 +10,8 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
+**UI Surface** *(include if any user story has a rendered interface)*: [yes/no; if yes, list the screens/views and the stories they belong to - drives conditional UI Verification tasks in tasks.md]
+
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
@@ -35,6 +37,8 @@
 
 1. **Given** [initial state], **When** [action], **Then** [expected outcome]
 2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+
+<!-- UI-surface stories only: make at least one "Then" state that the view renders the acceptance output concretely: visible elements, exact labels/header texts, formatted values (e.g., "the sync view shows two labeled drop zones and a green download button"), never "looks correct". -->
 
 ---
 
