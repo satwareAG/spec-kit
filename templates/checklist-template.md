@@ -28,11 +28,17 @@
 - [ ] CHK002 Second checklist item
 - [ ] CHK003 Third checklist item
 
+## UI Requirements Quality *(include if the spec declares UI Surface)*
+
+- [ ] CHK004 Every UI-facing acceptance scenario names concrete visible expectations (labels, texts, formatted values), not subjective terms like "looks correct"
+- [ ] CHK005 The UI Surface declaration matches the stories that reference rendered interfaces
+- [ ] CHK006 Browser-drive expectations are phrased so an automated check can verify them (named elements or texts), not only by human inspection
+
 ## [Category 2]
 
-- [ ] CHK004 Another category item
-- [ ] CHK005 Item with specific criteria
-- [ ] CHK006 Final item in this category
+- [ ] CHK007 Another category item
+- [ ] CHK008 Item with specific criteria
+- [ ] CHK009 Final item in this category
 
 ## Notes
 

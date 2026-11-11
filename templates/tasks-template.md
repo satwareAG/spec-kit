@@ -87,6 +87,16 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
 - [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
 
+### UI Verification for User Story 1 (ONLY if spec.md declares UI Surface) ⚠️
+
+> **NOTE: Generate this section only when spec.md's UI Surface declaration is "yes". Omit the section entirely otherwise - no UI-VERIFY tasks for API/backend-only stories.**
+
+- [ ] T0XX [US1] UI-VERIFY: drive US1 acceptance scenarios in a headless browser ([e.g., any browser automation CLI the project standardizes on])
+- [ ] T0XX [US1] Assert rendered output against each scenario's "Then" statement; prefer structural assertions (DOM/text/header content) over visual judgement; archive captures next to the feature docs
+- [ ] T0XX [US1] Record UI validation outcomes in quickstart.md; a failed UI-VERIFY blocks the story Checkpoint
+
+> **Findings contract**: report each finding as step / expected / actual with its capture (screenshot path or network log); one root cause = one fix; zero false positives - every claim carries its capture.
+
 ### Implementation for User Story 1
 
 - [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
