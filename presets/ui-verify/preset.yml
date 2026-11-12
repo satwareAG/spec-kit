@@ -1,0 +1,39 @@
+schema_version: "1.0"
+
+preset:
+  id: "ui-verify"
+  name: "UI Verification"
+  version: "0.1.0"
+  description: "Conditional UI-VERIFY task stubs, browser-drive acceptance scenarios, and UI requirements quality checks (github/spec-kit#5387)"
+  author: "satwareAG"
+  repository: "https://github.com/satwareAG/spec-kit"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=1.4.0"
+
+provides:
+  templates:
+    - type: "template"
+      name: "spec-template"
+      file: "templates/spec-template.md"
+      description: "Spec template with include-if UI Surface declaration and browser-drive scenario guidance (concrete rendered expectations, never 'looks correct')"
+      strategy: "replace"
+
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-template.md"
+      description: "Tasks template with conditional UI Verification section (ONLY on explicit UI Surface declaration), findings contract, and checkpoint-blocking UI-VERIFY tasks"
+      strategy: "replace"
+
+    - type: "template"
+      name: "checklist-template"
+      file: "templates/checklist-template.md"
+      description: "Checklist template with UI Requirements Quality category (requirement-quality items only)"
+      strategy: "replace"
+
+tags:
+  - "ui"
+  - "verification"
+  - "quality"
+  - "governance"
