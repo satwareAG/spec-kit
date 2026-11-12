@@ -1,18 +1,28 @@
 """Contract tests: the ui-verify preset carries PR #193's template delta exactly.
 
-Parity oracles are frozen git objects:
-- parent ``503028c2``: fork templates BEFORE PR #193 (== upstream v1.4.0 core)
-- delta  ``5cc91cf0``: fork templates with PR #193 applied
+Parity oracles are frozen fixture files - no VCS access, so the suite stays
+green on shallow CI checkouts and on Windows (explicit UTF-8 decoding; the
+tasks template contains non-ASCII emoji that a locale-decoded ``git show``
+would mangle on cp1252):
 
-The preset contributions must byte-equal the delta templates and differ from
-the parent only by the conditional UI-VERIFY additions. Generated-output
-non-UI identity is already proven by tests/test_ui_verify_template_contract.py
-(six contract tests); these tests pin the preset packaging layer on top of
-that evidence instead of re-proving it.
+- fixtures/ui_verify/parent/: fork templates BEFORE PR #193 (== upstream
+  v1.4.0 core), extracted from git ``503028c2`` on 2026-11-12
+- fixtures/ui_verify/with_pr193/: fork templates with PR #193 applied,
+  extracted from git ``5cc91cf0`` on 2026-11-12
+
+The preset contributions must byte-equal the with_pr193 fixtures, and every
+changed region vs the parent must be conditional UI-VERIFY content (or the
+checklist CHK renumbering the insertion forces).
+
+Generated-output non-UI identity is already proven by
+tests/test_ui_verify_template_contract.py (six contract tests); these tests
+pin the preset packaging layer on top of that evidence instead of re-proving
+it.
 """
 from __future__ import annotations
 
-import subprocess
+import difflib
+import re
 from pathlib import Path
 
 import pytest
@@ -21,8 +31,7 @@ from specify_cli.presets import PresetManifest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PRESET_DIR = REPO_ROOT / "presets" / "ui-verify"
-DELTA_SHA = "5cc91cf0"
-PARENT_SHA = "503028c2"
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "ui_verify"
 TEMPLATE_NAMES = ["spec-template.md", "tasks-template.md", "checklist-template.md"]
 
 # One distinctive marker per PR #193 addition, per template. Each must be
@@ -44,16 +53,18 @@ DELTA_MARKERS = {
     ],
 }
 
+# Phrases that mark a delta region as conditional (generation-time omittable
+# for non-UI features). The tasks/checklist sections gate via ONLY-if/include-if
+# wording; the spec-template story comment gates via "UI-surface stories only".
+_CONDITIONAL_ANCHORS = ("include if", "ONLY if", "UI-surface stories only")
 
-def _git_show(rev: str, name: str) -> str:
-    result = subprocess.run(
-        ["git", "show", f"{rev}:templates/{name}"],
-        capture_output=True,
-        text=True,
-        check=True,
-        cwd=REPO_ROOT,
-    )
-    return result.stdout
+# Checklist insertion forces CHK004-006 -> CHK007-009 renumbering in the next
+# category; those replaced lines are delta content without a conditional marker.
+_RENUMBER_RE = re.compile(r"^- \[ \] CHK\d{3} ")
+
+
+def _fixture(kind: str, name: str) -> str:
+    return (FIXTURES / kind / name).read_text(encoding="utf-8")
 
 
 def _contribution(name: str) -> str:
@@ -83,16 +94,50 @@ def test_declared_template_files_exist():
 
 @pytest.mark.parametrize("name", TEMPLATE_NAMES)
 def test_contribution_byte_equals_fork_template_with_pr193(name):
-    assert _contribution(name) == _git_show(DELTA_SHA, name)
+    assert _contribution(name) == _fixture("with_pr193", name)
 
 
 @pytest.mark.parametrize("name", TEMPLATE_NAMES)
-def test_contribution_differs_from_parent_only_by_conditional_delta(name):
-    parent = _git_show(PARENT_SHA, name)
+def test_contribution_contains_pr193_markers_absent_from_parent(name):
+    parent = _fixture("parent", name)
     contribution = _contribution(name)
     assert contribution != parent, f"{name} carries no delta"
     for marker in DELTA_MARKERS[name]:
         assert marker in contribution, f"delta marker missing from {name}: {marker}"
         assert marker not in parent, (
             f"marker not introduced by PR #193 in {name}: {marker}"
+        )
+
+
+@pytest.mark.parametrize("name", TEMPLATE_NAMES)
+def test_delta_regions_are_conditional_or_renumbering(name):
+    """Every changed region vs the parent is conditional UI content.
+
+    Inserted/replaced line blocks must either carry a conditional anchor
+    (generation omits them for non-UI features) or consist solely of CHK
+    renumbering lines. This is the template-level counterpart of the
+    generated-output byte-identity proven in
+    tests/test_ui_verify_template_contract.py.
+    """
+    parent_lines = _fixture("parent", name).splitlines(keepends=True)
+    contribution_lines = _contribution(name).splitlines(keepends=True)
+    matcher = difflib.SequenceMatcher(a=parent_lines, b=contribution_lines)
+    blocks: list[list[str]] = []
+    current: list[str] = []
+    for op, _i1, _i2, j1, j2 in matcher.get_opcodes():
+        if op in {"insert", "replace"}:
+            current.extend(contribution_lines[j1:j2])
+        elif current:
+            blocks.append(current)
+            current = []
+    if current:
+        blocks.append(current)
+
+    assert blocks, f"{name} has no changed regions vs parent"
+    for block in blocks:
+        text = "".join(block)
+        has_anchor = any(anchor in text for anchor in _CONDITIONAL_ANCHORS)
+        renumber_only = all(_RENUMBER_RE.match(line) for line in block)
+        assert has_anchor or renumber_only, (
+            f"{name}: non-conditional delta region: {text!r}"
         )
