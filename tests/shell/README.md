@@ -11,6 +11,7 @@ IPADP Phase 4.2 (issue #23) — automated tests for the fork's bash scripts.
 | `scripts/bash/eod.sh` | `test_eod.bats` |
 | `scripts/bash/check-privacy-leaks.sh` | `test_check_privacy_leaks.bats` |
 | `scripts/bash/check-upstream-sync.sh` | `test_check_upstream_sync.bats` |
+| REPO_ROOT location independence for the gate scripts (#198) | `test_repo_root_location.bats` |
 
 Each file provides at least two positive and one negative test.
 

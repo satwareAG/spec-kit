@@ -14,14 +14,16 @@ teardown() {
   rm -rf "$TMP"
 }
 
-# Run the validator against a modified copy by pointing it at a temp repo root.
+# Run the validator against a modified copy by pointing it at a temp project.
 run_against() {
-  # The validator resolves METADATA from its own repo root; for negative
-  # fixtures we copy the script into the temp tree so REPO_ROOT resolves there.
-  mkdir -p "$TMP/scripts/bash" "$TMP/specs"
-  cp "$SCRIPT" "$TMP/scripts/bash/"
+  # The validator resolves METADATA via get_repo_root (#198): SPECIFY_INIT_DIR
+  # wins, then the .specify marker walk from cwd, then script location. Point
+  # it at the fixture project explicitly - the fixture is a standalone
+  # spec-kit project layout (specs/ + .specify/ marker), not a copy of the
+  # checkout's scripts tree.
+  mkdir -p "$TMP/specs" "$TMP/.specify"
   cp "$TMP/metadata.json" "$TMP/specs/metadata.json"
-  run bash "$TMP/scripts/bash/check-metadata-schema.sh"
+  SPECIFY_INIT_DIR="$TMP" run bash "$SCRIPT"
 }
 
 @test "positive: real specs/metadata.json passes" {
