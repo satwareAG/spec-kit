@@ -15,7 +15,13 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Location-independent root (#198): get_repo_root honors SPECIFY_INIT_DIR,
+# walks up to the .specify marker, and falls back to the script location -
+# correct in both the fork checkout (scripts/bash/) and consumer installs
+# (.specify/scripts/bash/), unlike the old SCRIPT_DIR/../.. arithmetic.
+# shellcheck source=./common.sh
+source "$SCRIPT_DIR/common.sh"
+REPO_ROOT="$(get_repo_root)" || exit 2
 METADATA="${REPO_ROOT}/specs/metadata.json"
 
 if ! command -v jq >/dev/null 2>&1; then
