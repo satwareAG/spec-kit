@@ -12,7 +12,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Location-independent root (#198) - see check-metadata-schema.sh.
+# shellcheck source=./common.sh
+source "$SCRIPT_DIR/common.sh"
+REPO_ROOT="$(get_repo_root)" || exit 1
 CLINE_DIR="${HARNESS_DIR:-$HOME/internal/harness}"
 PROTOCOL="$CLINE_DIR/workflows/eod.protocol.md"
 
