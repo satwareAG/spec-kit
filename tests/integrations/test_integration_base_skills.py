@@ -172,7 +172,7 @@ class SkillsIntegrationTests:
             "Body\n",
             encoding="utf-8",
         )
-        monkeypatch.setattr(i, "list_command_templates", lambda: [template])
+        monkeypatch.setattr(type(i), "list_command_templates", lambda self: [template])
 
         m = IntegrationManifest(self.KEY, tmp_path)
         created = i.setup(tmp_path, m)
@@ -215,7 +215,7 @@ class SkillsIntegrationTests:
             "Body\n",
             encoding="utf-8",
         )
-        monkeypatch.setattr(i, "list_command_templates", lambda: [template])
+        monkeypatch.setattr(type(i), "list_command_templates", lambda self: [template])
 
         m = IntegrationManifest(self.KEY, tmp_path)
         created = i.setup(tmp_path, m)
@@ -500,6 +500,7 @@ class SkillsIntegrationTests:
                 ".specify/scripts/bash/create-new-feature.sh",
                 ".specify/scripts/bash/daily-routine.sh",
                 ".specify/scripts/bash/eod.sh",
+                ".specify/scripts/bash/markdown_sections.py",
                 ".specify/scripts/bash/pre-pr.sh",
                 ".specify/scripts/bash/resolve-template.sh",
                 ".specify/scripts/bash/setup-plan.sh",
@@ -511,6 +512,7 @@ class SkillsIntegrationTests:
                 ".specify/scripts/powershell/check-prerequisites.ps1",
                 ".specify/scripts/powershell/common.ps1",
                 ".specify/scripts/powershell/create-new-feature.ps1",
+                ".specify/scripts/powershell/markdown_sections.py",
                 ".specify/scripts/powershell/resolve-template.ps1",
                 ".specify/scripts/powershell/setup-plan.ps1",
                 ".specify/scripts/powershell/setup-tasks.ps1",

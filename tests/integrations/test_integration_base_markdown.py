@@ -242,12 +242,12 @@ class MarkdownIntegrationTests:
 
         if script_variant == "sh":
             for name in ["check-fork-release.sh", "check-metadata-schema.sh", "check-prerequisites.sh", "check-privacy-leaks.sh", "check-upstream-sync.sh",
-                         "common.sh", "create-new-feature.sh", "daily-routine.sh", "eod.sh", "pre-pr.sh",
+                         "common.sh", "create-new-feature.sh", "daily-routine.sh", "eod.sh", "markdown_sections.py", "pre-pr.sh",
                          "resolve-template.sh", "setup-plan.sh", "setup-tasks.sh", "sod.sh"]:
                 files.append(f".specify/scripts/bash/{name}")
         else:
             for name in ["check-prerequisites.ps1", "common.ps1", "create-new-feature.ps1",
-                         "resolve-template.ps1", "setup-plan.ps1", "setup-tasks.ps1"]:
+                         "markdown_sections.py", "resolve-template.ps1", "setup-plan.ps1", "setup-tasks.ps1"]:
                 files.append(f".specify/scripts/powershell/{name}")
 
         for name in ["checklist-template.md",
