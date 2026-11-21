@@ -167,7 +167,7 @@ class YamlIntegrationTests:
             "Body line two\n",
             encoding="utf-8",
         )
-        monkeypatch.setattr(i, "list_command_templates", lambda: [template])
+        monkeypatch.setattr(type(i), "list_command_templates", lambda self: [template])
 
         m = IntegrationManifest(self.KEY, tmp_path)
         created = i.setup(tmp_path, m)
