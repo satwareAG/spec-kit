@@ -846,6 +846,63 @@ class TestResolveTasksPowerShellParity:
         assert payload["TASKS"] == str(feature / "tasks.md")
         assert payload["AVAILABLE_DOCS"] == ["tasks.md"]
 
+    @pytest.mark.parametrize(
+        "exe",
+        [
+            pytest.param(
+                "pwsh",
+                marks=pytest.mark.skipif(not HAS_PWSH, reason="pwsh not available"),
+                id="pwsh",
+            ),
+            pytest.param(
+                WINDOWS_POWERSHELL,
+                marks=pytest.mark.skipif(
+                    not WINDOWS_POWERSHELL, reason="Windows PowerShell 5.1 not available"
+                ),
+                id="windows-powershell-5.1",
+            ),
+        ],
+    )
+    def test_json_mode_survives_legacy_stdout_with_non_ascii_path(
+        self, tmp_path: Path, exe: str | None
+    ):
+        assert exe is not None
+        project = _make_feature_project(tmp_path)
+        name = "002-é-后台-🚀"
+        try:
+            feature = _add_feature(project, name)
+        except OSError:
+            name = "002-é-后台"
+            feature = _add_feature(project, name)
+        (project / ".specify" / "feature.json").write_text(
+            json.dumps({"feature_directory": f"specs/{name}"}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        quoted = "'" + str(PS_SCRIPT).replace("'", "''") + "'"
+        cmd = [
+            exe,
+            "-NoProfile",
+            "-Command",
+            "$previous = [Console]::OutputEncoding; "
+            "[Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding('iso-8859-1'); "
+            f"try {{ & {quoted} -Json }} finally {{ [Console]::OutputEncoding = $previous }}; "
+            "exit $LASTEXITCODE",
+        ]
+
+        result = subprocess.run(cmd, cwd=project, capture_output=True, env=_resolver_env())
+
+        assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+        assert result.stdout.isascii(), result.stdout
+        payload = json.loads(result.stdout.decode("utf-8"))
+        assert Path(payload["FEATURE_DIR"]) == feature
+        assert Path(payload["TASKS"]) == feature / "tasks.md"
+        assert payload["AVAILABLE_DOCS"] == ["tasks.md"]
+
+        (feature / "tasks.md").unlink()
+        failed = subprocess.run(cmd, cwd=project, capture_output=True, env=_resolver_env())
+        assert failed.returncode == 1
+        assert failed.stdout.strip() == b""
+
     def test_json_output_matches_python(self, tmp_path: Path):
         project = _make_feature_project(tmp_path)
 
