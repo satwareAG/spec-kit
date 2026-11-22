@@ -71,8 +71,7 @@
         }
       }
     ],
-    "downstream": {
-      "note": "Typed fan-out withheld from this public copy per IPADP privacy boundary and #6/#168: this repo must not list private downstream consumers. The authoritative downstream map lives in the private coordination hub (IPADP RFC)."
-    }
+    "downstream": [],
+    "downstream_note": "Typed fan-out withheld from this public copy per IPADP privacy boundary and #6/#168: this repo must not list private downstream consumers. The authoritative downstream map lives in the private coordination hub (IPADP RFC)."
   }
 }
